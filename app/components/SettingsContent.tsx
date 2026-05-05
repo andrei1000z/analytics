@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   User,
 } from "lucide-react";
+import CopySnippet from "./CopySnippet";
 
 type ToggleProps = {
   label: string;
@@ -79,7 +80,7 @@ function Card({
   );
 }
 
-export default function SettingsPage() {
+export default function SettingsContent({ snippet }: { snippet: string }) {
   return (
     <div className="flex flex-col gap-10">
       <header className="flex flex-col gap-3">
@@ -91,11 +92,35 @@ export default function SettingsPage() {
           Setări
         </h1>
         <p className="max-w-2xl text-base leading-relaxed text-gray-500">
-          Gestionează preferințele de notificare, datele contului și integrările.
-          Toate setările se aplică instant — fără cookie-uri și fără tracking
-          între site-uri.
+          Gestionează preferințele de notificare, datele contului și
+          integrările. Toate setările se aplică instant — fără cookie-uri și
+          fără tracking între site-uri.
         </p>
       </header>
+
+      <Card
+        icon={KeyRound}
+        title="Integrare tracker"
+        description="Lipește snippet-ul în <head> și datele apar live în câteva secunde."
+      >
+        <div className="py-5">
+          <CopySnippet snippet={snippet} />
+          <ul className="mt-5 grid gap-2 text-xs text-gray-500 sm:grid-cols-3">
+            <li className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Asynchronous, &lt; 2 KB minified
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Fără cookie-uri / localStorage
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Folosește sendBeacon când e disponibil
+            </li>
+          </ul>
+        </div>
+      </Card>
 
       <Card
         icon={Bell}
@@ -149,10 +174,7 @@ export default function SettingsPage() {
               Site principal
             </span>
             <div className="flex items-center gap-2 rounded-2xl border border-border bg-white px-4 py-2.5 focus-within:border-accent focus-within:ring-4 focus-within:ring-accent-soft">
-              <Globe
-                className="h-4 w-4 text-gray-400"
-                strokeWidth={2}
-              />
+              <Globe className="h-4 w-4 text-gray-400" strokeWidth={2} />
               <input
                 type="url"
                 defaultValue="https://euroanalytics.ro"
@@ -164,25 +186,13 @@ export default function SettingsPage() {
       </Card>
 
       <Card
-        icon={KeyRound}
-        title="Date și tracker"
-        description="Cod de instalare, retenție și ștergere date."
+        icon={ShieldCheck}
+        title="Confidențialitate"
+        description="Politici aplicate automat pe toate datele tale."
       >
-        <div className="py-5">
-          <p className="text-xs font-medium uppercase tracking-[0.12em] text-gray-500">
-            Cod tracker
-          </p>
-          <pre className="mt-3 overflow-x-auto rounded-2xl bg-gray-900 px-5 py-4 font-mono text-xs leading-relaxed text-gray-100">
-            {`<script defer src="https://euroanalytics.ro/script.js"></script>`}
-          </pre>
-          <p className="mt-3 text-xs leading-relaxed text-gray-500">
-            Lipește snippet-ul în <code className="rounded bg-gray-100 px-1.5 py-0.5 font-mono">&lt;head&gt;</code>{" "}
-            și datele vor începe să curgă în câteva secunde.
-          </p>
-        </div>
         <Toggle
           label="Anonimizare suplimentară IP"
-          description="IP-urile nu sunt deja stocate, dar putem trunchia și ultimul octet la nivel de proxy edge."
+          description="IP-urile nu sunt stocate, dar putem trunchia și ultimul octet la nivel de proxy edge pentru un strat în plus."
           defaultOn
         />
         <div className="flex items-center justify-between gap-4 py-5">
