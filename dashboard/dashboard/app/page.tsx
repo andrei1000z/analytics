@@ -57,7 +57,7 @@ export default async function Home() {
           </h1>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-gray-500">
             {data.totalViews > 0
-              ? `${data.totalViews.toLocaleString("ro-RO")} vizualizări totale în ultimele 7 zile, ${data.uniqueDevices} dispozitive unice. Sursa principală: ${data.topReferrer}.`
+              ? `${data.totalViews.toLocaleString("ro-RO")} vizualizări totale în ultimele 7 zile · ${data.mobileShare}% mobile / ${data.desktopShare}% desktop · sursă principală: ${data.topReferrer}.`
               : "Fără trafic încă. Instalează tracker-ul pe site-ul tău și datele vor curge automat aici, fără cookie-uri."}
           </p>
         </div>
@@ -89,10 +89,17 @@ export default async function Home() {
           accent="blue"
         />
         <StatCard
-          label="Dispozitive unice"
-          value={data.uniqueDevices.toLocaleString("ro-RO")}
-          delta={data.uniqueDevicesDelta ?? undefined}
-          deltaLabel="Față de săptămâna trecută"
+          label="Mobile vs Desktop"
+          value={
+            data.mobileViews + data.desktopViews === 0
+              ? "—"
+              : `${data.mobileShare}% / ${data.desktopShare}%`
+          }
+          helper={
+            data.mobileViews + data.desktopViews === 0
+              ? "Nicio vizualizare cu device_type încă"
+              : `${data.mobileViews.toLocaleString("ro-RO")} mobile · ${data.desktopViews.toLocaleString("ro-RO")} desktop`
+          }
           icon={MonitorSmartphone}
           accent="violet"
         />
@@ -100,17 +107,17 @@ export default async function Home() {
           label="Sursă principală"
           value={data.topReferrer}
           helper={
-            data.topReferrer === "—"
-              ? "Niciun referrer înregistrat încă"
-              : "Cel mai frecvent referrer din ultimele 7 zile"
+            data.topReferrer === "—" || data.topReferrer === "Direct"
+              ? "Majoritatea traficului e direct (fără referrer)"
+              : `${data.topReferrerShare}% din traficul ultimelor 7 zile`
           }
           icon={Globe}
           accent="emerald"
         />
         <StatCard
-          label="Rată de conversie"
-          value={data.conversionRate}
-          helper="Adaugă evenimente de conversie pentru a vedea rata."
+          label="Vizualizări azi"
+          value={data.newToday.toLocaleString("ro-RO")}
+          helper="Numărul de vizualizări înregistrate astăzi"
           icon={TrendingUp}
           accent="amber"
         />
