@@ -1,5 +1,6 @@
 import {
   Activity,
+  AlertCircle,
   Calendar,
   Eye,
   Globe,
@@ -10,12 +11,37 @@ import StatCard from "./components/StatCard";
 import TrafficChart from "./components/TrafficChart";
 import TopPages from "./components/TopPages";
 import LiveVisitors from "./components/LiveVisitors";
+import { getDashboardData } from "./lib/dashboardData";
 
-const NEW_VISITORS_TODAY = 1284;
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-export default function Home() {
+export default async function Home() {
+  const data = await getDashboardData();
+
   return (
     <div className="flex flex-col gap-10">
+      {!data.available && (
+        <div className="flex items-start gap-4 rounded-3xl border border-amber-200 bg-amber-50 p-5">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+            <AlertCircle className="h-5 w-5" strokeWidth={2.25} />
+          </span>
+          <div>
+            <p className="text-sm font-semibold tracking-tight text-amber-900">
+              Conexiunea cu Supabase nu este completă încă.
+            </p>
+            <p className="mt-1 text-sm leading-relaxed text-amber-800">
+              Rulează scriptul{" "}
+              <code className="rounded bg-amber-100 px-1.5 py-0.5 font-mono text-xs">
+                backend/schema.sql
+              </code>{" "}
+              în Supabase SQL Editor, apoi reîncarcă această pagină. Până atunci
+              datele afișate sunt zero.
+            </p>
+          </div>
+        </div>
+      )}
+
       <section className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-2xl">
           <span className="inline-flex items-center gap-2 rounded-full bg-accent-soft px-3 py-1 text-xs font-medium text-accent">
@@ -25,12 +51,14 @@ export default function Home() {
           <h1 className="mt-5 text-4xl font-bold leading-[1.1] tracking-tight text-gray-900 sm:text-5xl">
             Salut, ai{" "}
             <span className="text-accent">
-              {NEW_VISITORS_TODAY.toLocaleString("ro-RO")} vizitatori
+              {data.newToday.toLocaleString("ro-RO")} vizitatori
             </span>{" "}
             noi azi.
           </h1>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-gray-500">
-            Trafic constant, fără anomalii. Pagina <span className="font-medium text-gray-700">/preturi</span> a urcat cu 22% față de săptămâna trecută — pare un moment bun să rulezi un nou test.
+            {data.totalViews > 0
+              ? `${data.totalViews.toLocaleString("ro-RO")} vizualizări totale în ultimele 7 zile, ${data.uniqueDevices} dispozitive unice. Sursa principală: ${data.topReferrer}.`
+              : "Fără trafic încă. Instalează tracker-ul pe site-ul tău și datele vor curge automat aici, fără cookie-uri."}
           </p>
         </div>
 
@@ -54,32 +82,35 @@ export default function Home() {
       <section className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Vizualizări totale"
-          value="48.219"
-          delta={12.4}
-          deltaLabel="+12.4% față de săptămâna trecută"
+          value={data.totalViews.toLocaleString("ro-RO")}
+          delta={data.totalViewsDelta ?? undefined}
+          deltaLabel="Față de săptămâna trecută"
           icon={Eye}
           accent="blue"
         />
         <StatCard
           label="Dispozitive unice"
-          value="12.847"
-          delta={8.2}
-          deltaLabel="+8.2% față de săptămâna trecută"
+          value={data.uniqueDevices.toLocaleString("ro-RO")}
+          delta={data.uniqueDevicesDelta ?? undefined}
+          deltaLabel="Față de săptămâna trecută"
           icon={MonitorSmartphone}
           accent="violet"
         />
         <StatCard
           label="Sursă principală"
-          value="google.com"
-          helper="42% din traficul total a venit prin căutare organică"
+          value={data.topReferrer}
+          helper={
+            data.topReferrer === "—"
+              ? "Niciun referrer înregistrat încă"
+              : "Cel mai frecvent referrer din ultimele 7 zile"
+          }
           icon={Globe}
           accent="emerald"
         />
         <StatCard
           label="Rată de conversie"
-          value="3,84%"
-          delta={-1.6}
-          deltaLabel="-1.6% față de săptămâna trecută"
+          value={data.conversionRate}
+          helper="Adaugă evenimente de conversie pentru a vedea rata."
           icon={TrendingUp}
           accent="amber"
         />
@@ -93,17 +124,13 @@ export default function Home() {
                 Trafic în ultimele 7 zile
               </h2>
               <p className="mt-1 text-sm text-gray-500">
-                Vizualizări vs. vizitatori unici, agregat zilnic în UTC+2.
+                Vizualizări agregate zilnic, în UTC.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-4 text-xs">
               <span className="inline-flex items-center gap-2 text-gray-600">
                 <span className="h-2.5 w-2.5 rounded-full bg-accent" />
                 Vizualizări
-              </span>
-              <span className="inline-flex items-center gap-2 text-gray-600">
-                <span className="h-2.5 w-2.5 rounded-full bg-gray-900" />
-                Vizitatori unici
               </span>
               <div className="ml-auto flex rounded-full border border-border bg-white p-1 sm:ml-0">
                 {(["7z", "30z", "90z"] as const).map((range, i) => (
@@ -123,16 +150,16 @@ export default function Home() {
             </div>
           </div>
           <div className="mt-6">
-            <TrafficChart />
+            <TrafficChart data={data.traffic} />
           </div>
         </div>
 
-        <LiveVisitors />
+        <LiveVisitors devices={data.devices} liveTotal={data.liveTotal} />
       </section>
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="xl:col-span-2">
-          <TopPages />
+          <TopPages pages={data.topPages} />
         </div>
 
         <div className="rounded-3xl border border-border bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 p-8 text-white shadow-[var(--shadow-soft)]">
