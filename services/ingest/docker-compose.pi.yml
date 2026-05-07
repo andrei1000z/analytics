@@ -1,0 +1,54 @@
+# Raspberry Pi + Cloudflare Tunnel deployment.
+# No Caddy — Cloudflare terminates TLS at the edge and tunnels plaintext to
+# the ingest container over a private network. Real visitor IP arrives via
+# the `CF-Connecting-IP` header.
+#
+# Usage:
+#   1. Create a Cloudflare Tunnel in dash.cloudflare.com → Zero Trust →
+#      Networks → Tunnels → Create a tunnel. Pick "Cloudflared", give it a
+#      name, copy the long token (starts with `eyJh…`).
+#   2. In .env beside this file, set TUNNEL_TOKEN=<that-token> and
+#      INGEST_SECRET=$(openssl rand -hex 32).
+#   3. `docker compose -f docker-compose.pi.yml up -d --build`
+#   4. In the Cloudflare tunnel UI → Public Hostname → Add a hostname:
+#      Domain: ingest.<your-domain>
+#      Path: empty
+#      Service: HTTP   URL: ingest:3000
+#   5. Verify: `curl https://ingest.<your-domain>/healthz`
+
+services:
+  ingest:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: analytics-ingest:latest
+    restart: unless-stopped
+    expose:
+      - "3000"
+    environment:
+      LISTEN_ADDR: "0.0.0.0:3000"
+      DATABASE_URL: "sqlite:///data/data.db?mode=rwc"
+      INGEST_SECRET: "${INGEST_SECRET:?set INGEST_SECRET in .env}"
+      RUST_LOG: "info,sqlx=warn,hyper=warn"
+    volumes:
+      - ingest-data:/data
+    networks:
+      - tunnel
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: "${TUNNEL_TOKEN:?set TUNNEL_TOKEN in .env}"
+    depends_on:
+      - ingest
+    networks:
+      - tunnel
+
+volumes:
+  ingest-data:
+
+networks:
+  tunnel:
+    driver: bridge

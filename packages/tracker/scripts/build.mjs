@@ -1,8 +1,17 @@
 // Build pipeline: esbuild → IIFE → minified → gzip-size assert (≤1024 B).
+// Also copies the built tracker.js into apps/dashboard/public/t.js so the
+// Vercel-hosted dashboard serves it under the same origin (visitors embed
+// `<script src="https://<dashboard-host>/t.js#…">`).
 import { build } from "esbuild";
 import { gzipSync } from "node:zlib";
-import { mkdirSync, readFileSync, writeFileSync, statSync } from "node:fs";
-import { dirname, join } from "node:path";
+import {
+  copyFileSync,
+  mkdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -10,6 +19,8 @@ const root = dirname(here);
 const dist = join(root, "dist");
 const out = join(dist, "tracker.js");
 const outGz = join(dist, "tracker.js.gz");
+const dashboardPublic = resolve(root, "..", "..", "apps", "dashboard", "public");
+const dashboardCopy = join(dashboardPublic, "t.js");
 
 const BUDGET_BYTES = 1024;
 
@@ -44,3 +55,10 @@ if (gzSize > BUDGET_BYTES) {
   process.exit(1);
 }
 console.log("OK: under 1024 B gzipped budget");
+
+// Mirror into apps/dashboard/public/t.js so `pnpm --filter @analytics/dashboard build`
+// includes it in the Vercel deploy. Self-hosted CDN can serve it from the
+// dashboard origin without a separate hop.
+mkdirSync(dashboardPublic, { recursive: true });
+copyFileSync(out, dashboardCopy);
+console.log(`also copied → apps/dashboard/public/t.js`);

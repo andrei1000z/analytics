@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use axum::body::Bytes;
 use axum::extract::{ConnectInfo, Query, State};
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use serde::Deserialize;
 
@@ -20,9 +20,44 @@ pub struct EventParams {
     s: String,
 }
 
+/// Pull the visitor's real IP from upstream proxy headers if present, else
+/// fall back to the connection's peer address. Trust order:
+///
+///   1. `CF-Connecting-IP` — Cloudflare Tunnel / CDN
+///   2. `X-Real-IP`        — Caddy / nginx reverse proxy
+///   3. `X-Forwarded-For`  — generic chain, first entry is the original client
+///   4. peer socket addr   — direct connection
+///
+/// Headers are only honored when the listening socket is bound behind a
+/// trusted proxy (the deploy recipes bind to `127.0.0.1` for tunnel mode and
+/// to the Caddy network alias for compose mode).
+fn client_ip_from(headers: &HeaderMap, addr: &SocketAddr) -> String {
+    for name in ["cf-connecting-ip", "x-real-ip"] {
+        if let Some(v) = headers.get(name).and_then(|h| h.to_str().ok()) {
+            let trimmed = v.trim();
+            if !trimmed.is_empty() {
+                return trimmed.to_string();
+            }
+        }
+    }
+    if let Some(v) = headers
+        .get("x-forwarded-for")
+        .and_then(|h| h.to_str().ok())
+    {
+        if let Some(first) = v.split(',').next() {
+            let trimmed = first.trim();
+            if !trimmed.is_empty() {
+                return trimmed.to_string();
+            }
+        }
+    }
+    addr.ip().to_string()
+}
+
 pub async fn handler(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     State(state): State<AppState>,
+    headers: HeaderMap,
     Query(params): Query<EventParams>,
     body: Bytes,
 ) -> impl IntoResponse {
@@ -34,7 +69,8 @@ pub async fn handler(
         None => return StatusCode::BAD_REQUEST,
     };
 
-    let ip_hash = state.salt.hash_ip(&addr.ip().to_string());
+    let client_ip = client_ip_from(&headers, &addr);
+    let ip_hash = state.salt.hash_ip(&client_ip);
     let mut rate_key = Vec::with_capacity(site_id.len() + ip_hash.len());
     rate_key.extend_from_slice(&site_id);
     rate_key.extend_from_slice(&ip_hash);
