@@ -14,6 +14,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { CreateSiteModal } from "@/components/CreateSiteModal";
 import { UnlockSiteModal } from "@/components/UnlockSiteModal";
 import { InstallPrompt } from "@/components/InstallPrompt";
+import { ReloadPrompt } from "@/components/ReloadPrompt";
 import { AuthGate } from "@/auth/AuthGate";
 import { clearSite } from "@/cache";
 import { cn } from "@/lib/cn";
@@ -103,6 +104,7 @@ function Shell(): ReactNode {
       <CreateSiteModal />
       <UnlockSiteModal />
       <InstallPrompt />
+      <ReloadPrompt />
       <ConfirmDialog
         open={confirmIntent !== null}
         tone={confirmIntent ? "danger" : "default"}

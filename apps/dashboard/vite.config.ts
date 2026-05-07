@@ -59,8 +59,14 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,svg,png,woff2,ico,webmanifest}"],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
-        skipWaiting: true,
+        // Don't skipWaiting automatically — let ReloadPrompt show a "new version"
+        // toast and the user clicks Reload. Prevents the infinite-reload loops we
+        // got when a deploy and an open tab raced.
+        skipWaiting: false,
         navigateFallback: "index.html",
+        // Allow the SW to receive { type: "SKIP_WAITING" } from ReloadPrompt.
+        // (vite-plugin-pwa's generated SW wires this listener automatically when
+        // skipWaiting is false but the ReloadPrompt posts the message.)
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
