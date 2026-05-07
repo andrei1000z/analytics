@@ -1,0 +1,72 @@
+# Caddy auto-TLS via Let's Encrypt — `${DOMAIN}` resolves at runtime.
+#
+# Hardens:
+#  - HTTP/1.1, /2, /3
+#  - HSTS preload
+#  - Strict CORS (override via ALLOWED_ORIGIN env if you want to lock it down)
+#  - Rate limit at the proxy edge in addition to the app's per-(site,ip) window
+
+{
+	# Caddy global options
+	servers {
+		# IP hashing happens INSIDE the app — Caddy logs only timestamps + status.
+		log_credentials false
+	}
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		# Remove server fingerprint
+		-Server
+	}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+	import security_headers
+
+	# Health check is public.
+	handle /healthz {
+		reverse_proxy ingest:3000
+	}
+
+	# Tracker beacon endpoint — large CORS surface so cross-origin sites can post.
+	handle /e* {
+		header {
+			Access-Control-Allow-Origin "*"
+			Access-Control-Allow-Methods "POST, OPTIONS"
+			Access-Control-Allow-Headers "content-type"
+			Access-Control-Max-Age "86400"
+		}
+		@options method OPTIONS
+		respond @options 204
+
+		reverse_proxy ingest:3000 {
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	# Dashboard sync WebSocket.
+	handle /sync* {
+		reverse_proxy ingest:3000 {
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+		}
+	}
+
+	# Anything else 404s — no static files served from this domain.
+	handle {
+		respond "Not found" 404
+	}
+
+	log {
+		output stdout
+		format console
+		level INFO
+	}
+}

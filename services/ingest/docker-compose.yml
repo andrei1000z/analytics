@@ -1,0 +1,51 @@
+# Production deployment recipe for analytics-ingest behind Caddy on a single VPS.
+# Tested target: Hetzner Cloud CX22 (Nuremberg / Falkenstein), 4 GB RAM.
+#
+# Usage:
+#   1. Copy this file + Caddyfile to the host.
+#   2. Set DOMAIN and INGEST_SECRET in a .env beside this file.
+#   3. `docker compose up -d`
+#   4. `curl https://${DOMAIN}/healthz` should return {"status":"ok"}.
+
+services:
+  ingest:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: analytics-ingest:latest
+    restart: unless-stopped
+    expose:
+      - "3000"
+    environment:
+      LISTEN_ADDR: "0.0.0.0:3000"
+      DATABASE_URL: "sqlite:///data/data.db?mode=rwc"
+      INGEST_SECRET: "${INGEST_SECRET:?set INGEST_SECRET in .env}"
+      RUST_LOG: "info,sqlx=warn,hyper=warn"
+    volumes:
+      - ingest-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"  # HTTP/3
+    environment:
+      DOMAIN: "${DOMAIN:?set DOMAIN in .env}"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - ingest
+
+volumes:
+  ingest-data:
+  caddy-data:
+  caddy-config:

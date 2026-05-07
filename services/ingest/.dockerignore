@@ -1,0 +1,12 @@
+target/
+.git/
+.gitignore
+Dockerfile
+docker-compose.yml
+Caddyfile
+README.md
+.env
+.env.*
+*.db
+*.sqlite
+*.sqlite3

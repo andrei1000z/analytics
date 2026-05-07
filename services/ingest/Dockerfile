@@ -1,14 +1,24 @@
-# Phase 4: multi-stage build, musl-static binary, scratch final image (~5 MB).
+# Multi-stage build: compile in slim Rust image, ship in distroless ~80 MB.
+# Caches the dependency layer separately so most rebuilds are fast.
+
 FROM rust:1.83-bookworm AS builder
 WORKDIR /app
-COPY Cargo.toml ./
+
+# Pre-fetch deps via a stub main.rs so the cargo registry layer caches.
+COPY Cargo.toml Cargo.lock ./
+RUN mkdir -p src \
+    && echo "fn main() {}" > src/main.rs \
+    && cargo build --release \
+    && rm -rf src target/release/deps/analytics_ingest* target/release/analytics-ingest*
+
+# Now copy the real source and rebuild — only this layer changes on code edits.
 COPY src ./src
 RUN cargo build --release
 
-FROM debian:bookworm-slim
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
-COPY --from=builder /app/target/release/analytics-ingest /usr/local/bin/
+# Distroless runtime — minimal attack surface, no shell, no package manager.
+FROM gcr.io/distroless/cc-debian12
+WORKDIR /
+COPY --from=builder /app/target/release/analytics-ingest /usr/local/bin/analytics-ingest
 EXPOSE 3000
-CMD ["/usr/local/bin/analytics-ingest"]
+USER nonroot:nonroot
+ENTRYPOINT ["/usr/local/bin/analytics-ingest"]
