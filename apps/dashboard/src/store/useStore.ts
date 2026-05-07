@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { id } from "@/lib/format";
+import type { Range } from "@/cache/types";
 
 export type Site = {
   id: string;
@@ -22,6 +23,7 @@ type StoreState = {
   sites: Record<string, Site>;
   collections: Record<string, Collection>;
   activeSiteId: string | null;
+  range: Range;
   paletteOpen: boolean;
   settingsOpen: boolean;
   confirmIntent: ConfirmIntent | null;
@@ -39,6 +41,7 @@ type StoreActions = {
   deleteSite: (siteId: string) => void;
   createCollection: (name: string) => string;
   toggleCollection: (collectionId: string) => void;
+  setRange: (range: Range) => void;
   setPaletteOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
   setConfirmIntent: (intent: ConfirmIntent | null) => void;
@@ -88,6 +91,7 @@ export const useStore = create<StoreState & StoreActions>()(
       sites: SEED.sites,
       collections: SEED.collections,
       activeSiteId: null,
+      range: "7d",
       paletteOpen: false,
       settingsOpen: false,
       confirmIntent: null,
@@ -150,6 +154,7 @@ export const useStore = create<StoreState & StoreActions>()(
           };
         }),
 
+      setRange: (range) => set({ range }),
       setPaletteOpen: (paletteOpen) => set({ paletteOpen }),
       setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
       setConfirmIntent: (confirmIntent) => set({ confirmIntent }),
@@ -171,6 +176,7 @@ export const useStore = create<StoreState & StoreActions>()(
         sites: state.sites,
         collections: state.collections,
         activeSiteId: state.activeSiteId,
+        range: state.range,
       }),
       migrate: (persisted, _version) => {
         const partial = persisted as Partial<StoreState> | null | undefined;
@@ -178,6 +184,7 @@ export const useStore = create<StoreState & StoreActions>()(
           sites: partial?.sites ?? SEED.sites,
           collections: partial?.collections ?? SEED.collections,
           activeSiteId: partial?.activeSiteId ?? null,
+          range: partial?.range ?? "7d",
         } as Partial<StoreState> as never;
       },
     },

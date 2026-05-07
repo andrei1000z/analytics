@@ -4,6 +4,7 @@ import { ChevronLeft, Globe, Plus, ShieldCheck } from "lucide-react";
 import { useStore } from "@/store/useStore";
 import { EmptyState } from "./EmptyState";
 import { Kbd } from "./Kbd";
+import { SiteOverview } from "./SiteOverview";
 import { isAppleDevice } from "@/hooks/useHotkeys";
 import { relativeTime } from "@/lib/format";
 
@@ -91,50 +92,8 @@ export function MainPane(): ReactNode {
       </header>
 
       <div className="flex-1 overflow-y-auto px-5 py-6 md:px-8 md:py-8">
-        <Phase1Placeholder />
+        <SiteOverview site={activeSite} />
       </div>
     </motion.section>
-  );
-}
-
-function Phase1Placeholder(): ReactNode {
-  return (
-    <div className="grid gap-4 md:grid-cols-3">
-      {[
-        { label: "Vizitatori (24h)", value: "—", hint: "Phase 2" },
-        { label: "Pagini vizualizate", value: "—", hint: "Phase 2" },
-        { label: "Live", value: "—", hint: "Phase 5" },
-      ].map((kpi) => (
-        <div
-          key={kpi.label}
-          className="glass-card rounded-3xl p-5"
-        >
-          <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-text-muted">
-            {kpi.label}
-          </p>
-          <p className="mt-3 text-3xl font-bold tracking-tight text-text-faint">{kpi.value}</p>
-          <p className="mt-3 inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.16em] text-text-faint">
-            <span className="inline-flex h-1 w-1 rounded-full bg-text-faint" aria-hidden />
-            {kpi.hint}
-          </p>
-        </div>
-      ))}
-      <div className="glass-card md:col-span-3 rounded-3xl p-6">
-        <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-text-muted">
-          Trafic
-        </p>
-        <h3 className="mt-1 text-lg font-semibold tracking-tight">Grafic agregat</h3>
-        <p className="mt-1 text-sm leading-relaxed text-text-muted">
-          Charts SVG cu motion paths sosesc în Phase 2 (cache local IndexedDB + agregare client-side).
-          Snippet-ul tracker (≤1 KB) intră în Phase 3, ingest-ul Rust în Phase 4, decriptarea live
-          WebCrypto în Phase 5.
-        </p>
-        <div className="mt-5 flex h-40 items-center justify-center rounded-2xl border border-dashed border-line bg-soft-gray/40">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-text-faint">
-            Spațiu rezervat · Phase 2
-          </p>
-        </div>
-      </div>
-    </div>
   );
 }
