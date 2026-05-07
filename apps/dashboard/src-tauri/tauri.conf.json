@@ -1,0 +1,43 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Analytics",
+  "version": "0.1.0",
+  "identifier": "eu.analytics.app",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Analytics",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 480,
+        "minHeight": 400,
+        "decorations": true,
+        "transparent": false,
+        "fullscreen": false,
+        "resizable": true,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' tauri:; connect-src 'self' tauri: ws: wss: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; script-src 'self' 'unsafe-inline'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "../public/icons/icon-192.png",
+      "../public/icons/icon-512.png",
+      "../public/icons/icon-1024.png"
+    ],
+    "category": "DeveloperTool",
+    "shortDescription": "EU privacy-first web analytics",
+    "longDescription": "Privacy-first, EU-sovereign, zero-knowledge web analytics. Liquid Glass design. Sub-frame paint. Self-hosted ingest."
+  }
+}

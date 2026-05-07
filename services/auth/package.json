@@ -1,0 +1,20 @@
+{
+  "name": "@analytics/auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Optional Bun-based passkey auth service for multi-operator deployments. Phase 6.",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@simplewebauthn/server": "^11.0.0",
+    "hono": "^4.6.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.1.0",
+    "typescript": "~5.8.0"
+  }
+}

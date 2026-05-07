@@ -9,12 +9,23 @@ import { MainPane } from "@/components/MainPane";
 import { CommandPalette } from "@/components/CommandPalette";
 import { SettingsModal } from "@/components/SettingsModal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { AuthGate } from "@/auth/AuthGate";
 import { cn } from "@/lib/cn";
 
 export default function App(): ReactNode {
   // Initialize theme + listen to system changes
   useTheme();
-  // Mount the global E2E sync client (driven by ingestUrl + syncPassphrase)
+
+  return (
+    <AuthGate>
+      <Shell />
+    </AuthGate>
+  );
+}
+
+function Shell(): ReactNode {
+  // Mount the global E2E sync client (driven by ingestUrl + syncPassphrase).
+  // Lives behind AuthGate so the WS only opens after the operator unlocks.
   useSync();
 
   const activeSiteId = useStore((s) => s.activeSiteId);

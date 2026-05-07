@@ -1,0 +1,37 @@
+[package]
+name = "analytics-desktop"
+version = "0.1.0"
+edition = "2021"
+description = "Analytics — privacy-first EU web analytics, native shell."
+license = "AGPL-3.0-only"
+publish = false
+
+# Cargo registry compatibility
+[lib]
+name = "analytics_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Phase 6.5: enable per-site passphrase storage in the OS keychain. Keep the
+# Argon2-derived password helper in lib.rs ready to wire up.
+# tauri-plugin-stronghold = "2"
+# argon2 = "0.5"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true
