@@ -8,6 +8,7 @@ import {
   Globe,
   Lock,
   MousePointer2,
+  RefreshCcw,
   Send,
   ShieldCheck,
   Timer,
@@ -18,7 +19,7 @@ import type { Site } from "@/store/useStore";
 import { useStore } from "@/store/useStore";
 import { useSession } from "@/store/useSessions";
 import { useSessions } from "@/store/useSessions";
-import { snapshot, subscribe, totalEvents } from "@/cache";
+import { forceRefresh, snapshot, subscribe, totalEvents } from "@/cache";
 import type { SiteSnapshot } from "@/cache/types";
 import { RangeSelector } from "./widgets/RangeSelector";
 import { KpiCard } from "./widgets/KpiCard";
@@ -36,6 +37,7 @@ import { TrendingPages } from "./widgets/TrendingPages";
 import { PagesPerSession } from "./widgets/PagesPerSession";
 import { EmbedSnippet } from "./EmbedSnippet";
 import { compact } from "@/lib/format";
+import { cn } from "@/lib/cn";
 
 const SECTION_SPRING = {
   type: "spring" as const,
@@ -65,6 +67,7 @@ export function SiteOverview({ site }: { site: Site }): ReactNode {
   const lockSession = useSessions((s) => s.lock);
 
   const [snap, setSnap] = useState<SiteSnapshot>(() => snapshot(site.id, range));
+  const [refreshSpin, setRefreshSpin] = useState(false);
 
   useEffect(() => {
     setSnap(snapshot(site.id, range));
@@ -122,7 +125,25 @@ export function SiteOverview({ site }: { site: Site }): ReactNode {
           {site.domain}
           <ExternalLink className="h-3 w-3" aria-hidden />
         </a>
-        <RangeSelector value={range} onChange={setRange} />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setRefreshSpin(true);
+              forceRefresh(site.id);
+              window.setTimeout(() => setRefreshSpin(false), 500);
+            }}
+            className="inline-flex items-center justify-center rounded-xl border border-line bg-soft-elev p-1.5 text-text-muted shadow-soft-1 transition-all hover:-translate-y-px hover:text-text-main hover:shadow-soft-2"
+            aria-label="Reîmprospătează datele"
+            title="Reîmprospătează"
+          >
+            <RefreshCcw
+              className={cn("h-3.5 w-3.5 transition-transform", refreshSpin ? "animate-spin" : "")}
+              aria-hidden
+            />
+          </button>
+          <RangeSelector value={range} onChange={setRange} />
+        </div>
       </div>
 
       {events === 0 ? (

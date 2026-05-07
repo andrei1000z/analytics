@@ -30,8 +30,28 @@ type Listener = () => void;
 
 const events = new Map<string, DecryptedEvent[]>();
 const listeners = new Map<string, Set<Listener>>();
+const pendingNotify = new Map<string, number>();
+const NOTIFY_THROTTLE_MS = 80;
 
 function notify(siteId: string): void {
+  // Coalesce rapid bursts (e.g. 1000-event backfill) into one re-render frame.
+  if (pendingNotify.has(siteId)) return;
+  const id = window.setTimeout(() => {
+    pendingNotify.delete(siteId);
+    const subs = listeners.get(siteId);
+    if (!subs) return;
+    for (const fn of subs) fn();
+  }, NOTIFY_THROTTLE_MS);
+  pendingNotify.set(siteId, id);
+}
+
+/** Manual refresh — bypasses throttle, fires immediately. */
+export function forceRefresh(siteId: string): void {
+  const id = pendingNotify.get(siteId);
+  if (id !== undefined) {
+    window.clearTimeout(id);
+    pendingNotify.delete(siteId);
+  }
   const subs = listeners.get(siteId);
   if (!subs) return;
   for (const fn of subs) fn();

@@ -4,6 +4,16 @@
   "outputDirectory": "apps/dashboard/dist",
   "installCommand": "echo 'install handled by buildCommand'",
   "framework": null,
+  "rewrites": [
+    {
+      "source": "/e",
+      "destination": "https://rhjfutxgmnkonichxpro.supabase.co/functions/v1/e"
+    },
+    {
+      "source": "/e/:path*",
+      "destination": "https://rhjfutxgmnkonichxpro.supabase.co/functions/v1/e/:path*"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
