@@ -1,31 +1,33 @@
 # Dependencies
 node_modules/
 .pnpm-store/
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
 
 # Build / framework output
-.next/
-out/
 dist/
 build/
-/coverage
+.next/
+out/
+target/
+*.tsbuildinfo
+
+# Vite / cache
+.vite/
+.cache/
+.eslintcache
 
 # Env / secrets
 .env
 .env.*
 !.env.example
 
+# Local databases
+*.sqlite
+*.sqlite3
+*.db
+
 # Logs
 *.log
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
 pnpm-debug.log*
 .pnpm-debug.log*
 
@@ -36,14 +38,19 @@ Thumbs.db
 .idea/
 *.pem
 
-# TypeScript / Next.js generated
-*.tsbuildinfo
-next-env.d.ts
+# Coverage
+coverage/
+
+# Generated icon outputs (regenerate from icon-source.svg via `pnpm gen:icon`)
+apps/dashboard/public/icons/
+apps/dashboard/public/favicon-*.png
+apps/dashboard/public/apple-touch-icon.png
+
+# Tauri target
+**/src-tauri/target/
 
 # Vercel
-.vercel
+.vercel/
 
-# Local databases (legacy)
-*.sqlite
-*.sqlite3
-*.db
+# Vsix artifacts (Claude Code installer)
+*.vsix
