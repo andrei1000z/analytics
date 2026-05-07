@@ -2,12 +2,25 @@
 name = "analytics-ingest"
 version = "0.1.0"
 edition = "2021"
-description = "EU-sovereign zero-knowledge web analytics ingest server. Phase 4."
+description = "EU-sovereign zero-knowledge web analytics ingest server."
 license = "AGPL-3.0-only"
 publish = false
 
 [dependencies]
-# Phase 4 brings in: axum, sqlx, tokio, tracing, serde, blake3, hmac.
+anyhow = "1"
+axum = { version = "0.8", features = ["ws", "macros"] }
+base64 = "0.22"
+dashmap = "6"
+futures-util = "0.3"
+hmac = "0.12"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "sqlite"] }
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.6", features = ["cors", "trace"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [profile.release]
 opt-level = 3
