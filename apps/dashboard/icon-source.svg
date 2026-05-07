@@ -1,64 +1,98 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="none">
   <defs>
+    <!-- Deep EU blue base with subtle vignette -->
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#3366cc"/>
-      <stop offset="0.55" stop-color="#0a3aa8"/>
-      <stop offset="1" stop-color="#001f5e"/>
+      <stop offset="0" stop-color="#0050D4"/>
+      <stop offset="0.5" stop-color="#003399"/>
+      <stop offset="1" stop-color="#001A52"/>
     </linearGradient>
-    <radialGradient id="topGloss" cx="0.35" cy="0.18" r="0.55">
+
+    <!-- Liquid Glass top refraction -->
+    <linearGradient id="topGloss" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="0.22" stop-color="#FFFFFF" stop-opacity="0.06"/>
       <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="accentGlow" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="#FFCC00" stop-opacity="0.55"/>
+    </linearGradient>
+
+    <!-- Yellow EU palette — rich, multi-stop for depth -->
+    <linearGradient id="yellowBar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFE56B"/>
+      <stop offset="0.45" stop-color="#FFCC00"/>
+      <stop offset="1" stop-color="#E6B500"/>
+    </linearGradient>
+
+    <!-- Glass overlay on each bar — top sheen + bottom darkening -->
+    <linearGradient id="barSheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.45"/>
+      <stop offset="0.18" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="0.85" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#7A4F00" stop-opacity="0.18"/>
+    </linearGradient>
+
+    <!-- Yellow glow halo behind the tallest bar -->
+    <radialGradient id="accentGlow" cx="0.5" cy="0.45" r="0.55">
+      <stop offset="0" stop-color="#FFCC00" stop-opacity="0.45"/>
+      <stop offset="0.55" stop-color="#FFCC00" stop-opacity="0.12"/>
       <stop offset="1" stop-color="#FFCC00" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="bar1" x1="0" y1="1" x2="0" y2="0">
-      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.45"/>
-      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.78"/>
-    </linearGradient>
-    <linearGradient id="bar2" x1="0" y1="1" x2="0" y2="0">
-      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.65"/>
-      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.92"/>
-    </linearGradient>
-    <linearGradient id="bar3" x1="0" y1="1" x2="0" y2="0">
-      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.88"/>
-      <stop offset="1" stop-color="#FFFFFF"/>
-    </linearGradient>
+
+    <!-- Soft drop shadow under the bars — tactile depth -->
+    <filter id="barShadow" x="-30%" y="-10%" width="160%" height="160%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="14"/>
+      <feOffset dx="0" dy="14"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.55"/>
+      </feComponentTransfer>
+      <feComposite in2="SourceAlpha" operator="out"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
 
-  <!-- Rounded square base with deep EU blue gradient -->
+  <!-- Rounded square base -->
   <rect width="1024" height="1024" rx="232" fill="url(#bg)"/>
 
-  <!-- Top gloss highlight (Liquid Glass refraction hint) -->
+  <!-- Faint EU stars constellation (8 stars, top arc) -->
+  <g fill="#FFFFFF" opacity="0.07">
+    <circle cx="160" cy="240" r="6"/>
+    <circle cx="220" cy="180" r="5"/>
+    <circle cx="312" cy="148" r="6"/>
+    <circle cx="430" cy="124" r="5"/>
+    <circle cx="600" cy="124" r="5"/>
+    <circle cx="720" cy="148" r="6"/>
+    <circle cx="812" cy="180" r="5"/>
+    <circle cx="864" cy="240" r="6"/>
+  </g>
+
+  <!-- Liquid Glass top refraction (over base, under bars) -->
   <rect width="1024" height="1024" rx="232" fill="url(#topGloss)"/>
 
-  <!-- Subtle EU stars ring (12 stars in a faint arc — only top half visible) -->
-  <g fill="#FFFFFF" opacity="0.10">
-    <circle cx="512" cy="172" r="12"/>
-    <circle cx="600" cy="186" r="10"/>
-    <circle cx="424" cy="186" r="10"/>
-    <circle cx="684" cy="222" r="9"/>
-    <circle cx="340" cy="222" r="9"/>
-    <circle cx="752" cy="280" r="8"/>
-    <circle cx="272" cy="280" r="8"/>
+  <!-- Yellow accent halo behind tallest bar -->
+  <ellipse cx="780" cy="380" rx="280" ry="240" fill="url(#accentGlow)"/>
+
+  <!-- Three yellow rising bars — analytics chart motif -->
+  <g filter="url(#barShadow)">
+    <!-- Bar 1 (shortest) -->
+    <rect x="232" y="608" width="156" height="208" rx="46" fill="url(#yellowBar)"/>
+    <!-- Bar 2 (medium) -->
+    <rect x="434" y="448" width="156" height="368" rx="46" fill="url(#yellowBar)"/>
+    <!-- Bar 3 (tallest) -->
+    <rect x="636" y="240" width="156" height="576" rx="46" fill="url(#yellowBar)"/>
   </g>
 
-  <!-- Yellow EU accent glow behind the rising peak -->
-  <circle cx="704" cy="324" r="180" fill="url(#accentGlow)"/>
+  <!-- Glass sheen layer on each bar (top white highlight + bottom darken) -->
+  <rect x="232" y="608" width="156" height="208" rx="46" fill="url(#barSheen)"/>
+  <rect x="434" y="448" width="156" height="368" rx="46" fill="url(#barSheen)"/>
+  <rect x="636" y="240" width="156" height="576" rx="46" fill="url(#barSheen)"/>
 
-  <!-- Trio of rising bars — analytics motif -->
-  <rect x="248" y="616" width="124" height="200" rx="42" fill="url(#bar1)"/>
-  <rect x="412" y="488" width="124" height="328" rx="42" fill="url(#bar2)"/>
-  <rect x="576" y="324" width="124" height="492" rx="42" fill="url(#bar3)"/>
+  <!-- Subtle outline on bars for crispness at small sizes -->
+  <rect x="232" y="608" width="156" height="208" rx="46" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.12"/>
+  <rect x="434" y="448" width="156" height="368" rx="46" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.12"/>
+  <rect x="636" y="240" width="156" height="576" rx="46" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-opacity="0.12"/>
 
-  <!-- Yellow EU star sitting atop the tallest bar -->
-  <g transform="translate(704, 268)">
-    <circle r="42" fill="#FFCC00"/>
-    <circle r="42" stroke="#FFFFFF" stroke-width="6" stroke-opacity="0.45"/>
-  </g>
-
-  <!-- Soft bottom drop edge — gives the icon a tactile, glass feel -->
+  <!-- Hairline outer ring — tactile glass edge -->
   <rect width="1024" height="1024" rx="232" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-opacity="0.10"/>
 </svg>
