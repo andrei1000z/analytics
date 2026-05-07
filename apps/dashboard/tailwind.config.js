@@ -68,6 +68,10 @@ export default {
       backdropBlur: {
         "3xl": "64px",
       },
+      gridTemplateColumns: {
+        // 24-column grid for the hour-by-hour heatmap row
+        24: "repeat(24, minmax(0, 1fr))",
+      },
     },
   },
   plugins: [],

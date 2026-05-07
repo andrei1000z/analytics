@@ -14,7 +14,9 @@ import type {
   DecryptedEvent,
   Delta,
   DeviceKind,
+  DurationBucket,
   Range,
+  ReferrerCategory,
   SiteSnapshot,
 } from "./types";
 import { RANGE_HOURS } from "./types";
@@ -115,7 +117,72 @@ type SessionStats = {
   count: number;
   firstTs: number;
   lastTs: number;
+  firstPath: string;
+  lastPath: string;
 };
+
+const SEARCH_HOSTS = [
+  "google.",
+  "bing.",
+  "duckduckgo.",
+  "yahoo.",
+  "baidu.",
+  "yandex.",
+  "ecosia.",
+  "qwant.",
+  "startpage.",
+  "kagi.",
+  "brave.",
+];
+
+const SOCIAL_HOSTS = [
+  "twitter.com",
+  "x.com",
+  "facebook.com",
+  "fb.com",
+  "instagram.com",
+  "tiktok.com",
+  "linkedin.com",
+  "reddit.com",
+  "ycombinator.com",
+  "lobste.rs",
+  "mastodon.",
+  "bsky.app",
+  "threads.net",
+  "youtube.com",
+  "youtu.be",
+  "pinterest.com",
+  "telegram.",
+  "t.me",
+  "whatsapp.com",
+];
+
+function categorizeReferrer(host: string): ReferrerCategory {
+  if (!host) return "direct";
+  const h = host.toLowerCase();
+  for (const s of SEARCH_HOSTS) if (h.includes(s)) return "search";
+  for (const s of SOCIAL_HOSTS) if (h === s || h.endsWith("." + s) || h.includes(s)) return "social";
+  return "referral";
+}
+
+const DURATION_BUCKET_LABELS: DurationBucket[] = [
+  "<10s",
+  "10s-30s",
+  "30s-1m",
+  "1m-3m",
+  "3m-10m",
+  "10m+",
+];
+
+function durationBucketFor(ms: number): DurationBucket {
+  const s = ms / 1000;
+  if (s < 10) return "<10s";
+  if (s < 30) return "10s-30s";
+  if (s < 60) return "30s-1m";
+  if (s < 180) return "1m-3m";
+  if (s < 600) return "3m-10m";
+  return "10m+";
+}
 
 type WindowAggregate = {
   pageviews: number;
@@ -126,7 +193,13 @@ type WindowAggregate = {
   byPath: Map<string, number>;
   byReferrer: Map<string, number>;
   byDevice: { desktop: number; mobile: number; tablet: number };
+  byCategory: { direct: number; search: number; social: number; referral: number };
+  byEntryPath: Map<string, number>;
+  byExitPath: Map<string, number>;
+  byDuration: Map<DurationBucket, number>;
   hourly: Map<number, { sessions: Set<string>; pageviews: number }>;
+  /** 7 (Mon..Sun) × 24 (hours) sessions matrix */
+  heatmap: number[][];
 };
 
 function emptyWindow(): WindowAggregate {
@@ -139,7 +212,12 @@ function emptyWindow(): WindowAggregate {
     byPath: new Map(),
     byReferrer: new Map(),
     byDevice: { desktop: 0, mobile: 0, tablet: 0 },
+    byCategory: { direct: 0, search: 0, social: 0, referral: 0 },
+    byEntryPath: new Map(),
+    byExitPath: new Map(),
+    byDuration: new Map(),
     hourly: new Map(),
+    heatmap: Array.from({ length: 7 }, () => Array(24).fill(0)),
   };
 }
 
@@ -147,6 +225,8 @@ function aggregate(slice: DecryptedEvent[]): WindowAggregate {
   const w = emptyWindow();
   if (slice.length === 0) return w;
   const sessions = new Map<string, SessionStats>();
+  // Convert "Sunday=0" weekday → "Monday=0" so EU readers see Mon at index 0.
+  const dayIndex = (date: Date): number => (date.getDay() + 6) % 7;
 
   for (const ev of slice) {
     w.pageviews += 1;
@@ -154,9 +234,11 @@ function aggregate(slice: DecryptedEvent[]): WindowAggregate {
     const path = typeof ev.p === "string" ? ev.p : "/";
     w.byPath.set(path, (w.byPath.get(path) ?? 0) + 1);
 
-    if (typeof ev.r === "string" && ev.r.length > 0) {
-      w.byReferrer.set(ev.r, (w.byReferrer.get(ev.r) ?? 0) + 1);
+    const refHost = typeof ev.r === "string" ? ev.r : "";
+    if (refHost.length > 0) {
+      w.byReferrer.set(refHost, (w.byReferrer.get(refHost) ?? 0) + 1);
     }
+    w.byCategory[categorizeReferrer(refHost)] += 1;
 
     const vw = Array.isArray(ev.v) && typeof ev.v[0] === "number" ? ev.v[0] : 0;
     w.byDevice[deviceKindFor(vw)] += 1;
@@ -173,12 +255,18 @@ function aggregate(slice: DecryptedEvent[]): WindowAggregate {
     const nonce = typeof ev.n === "string" ? ev.n : `_${ev.ts}`;
     let s = sessions.get(nonce);
     if (!s) {
-      s = { count: 0, firstTs: ev.ts, lastTs: ev.ts };
+      s = { count: 0, firstTs: ev.ts, lastTs: ev.ts, firstPath: path, lastPath: path };
       sessions.set(nonce, s);
     }
     s.count += 1;
-    if (ev.ts < s.firstTs) s.firstTs = ev.ts;
-    if (ev.ts > s.lastTs) s.lastTs = ev.ts;
+    if (ev.ts < s.firstTs) {
+      s.firstTs = ev.ts;
+      s.firstPath = path;
+    }
+    if (ev.ts > s.lastTs) {
+      s.lastTs = ev.ts;
+      s.lastPath = path;
+    }
   }
 
   w.sessions = sessions.size;
@@ -189,6 +277,18 @@ function aggregate(slice: DecryptedEvent[]): WindowAggregate {
       w.totalDurationMs += s.lastTs - s.firstTs;
       w.durationSamples += 1;
     }
+    // Entry / exit paths
+    w.byEntryPath.set(s.firstPath, (w.byEntryPath.get(s.firstPath) ?? 0) + 1);
+    w.byExitPath.set(s.lastPath, (w.byExitPath.get(s.lastPath) ?? 0) + 1);
+    // Duration bucket
+    const dur = s.count <= 1 ? 0 : s.lastTs - s.firstTs;
+    const db = durationBucketFor(dur);
+    w.byDuration.set(db, (w.byDuration.get(db) ?? 0) + 1);
+    // Heatmap by session start
+    const start = new Date(s.firstTs);
+    const di = dayIndex(start);
+    const hi = start.getHours();
+    if (w.heatmap[di]) w.heatmap[di]![hi] = (w.heatmap[di]![hi] ?? 0) + 1;
   }
   return w;
 }
@@ -217,6 +317,8 @@ export function snapshot(siteId: string, range: Range): SiteSnapshot {
   const bouncePrev = b.sessions > 0 ? b.bouncedSessions / b.sessions : 0;
   const durCurMs = a.durationSamples > 0 ? a.totalDurationMs / a.durationSamples : 0;
   const durPrevMs = b.durationSamples > 0 ? b.totalDurationMs / b.durationSamples : 0;
+  const ppsCur = a.sessions > 0 ? a.pageviews / a.sessions : 0;
+  const ppsPrev = b.sessions > 0 ? b.pageviews / b.sessions : 0;
 
   // Build hourly buckets aligned to whole hours within the range.
   const startHour = curStart - (curStart % HOUR_MS);
@@ -246,6 +348,52 @@ export function snapshot(siteId: string, range: Range): SiteSnapshot {
     { kind: "tablet", views: a.byDevice.tablet },
   ];
 
+  const topEntryPages = Array.from(a.byEntryPath, ([path, sessions]) => ({ path, sessions }))
+    .sort((x, y) => y.sessions - x.sessions)
+    .slice(0, 6);
+
+  const topExitPages = Array.from(a.byExitPath, ([path, sessions]) => ({ path, sessions }))
+    .sort((x, y) => y.sessions - x.sessions)
+    .slice(0, 6);
+
+  const referrerCategories: Array<{ category: ReferrerCategory; views: number }> = [
+    { category: "direct", views: a.byCategory.direct },
+    { category: "search", views: a.byCategory.search },
+    { category: "social", views: a.byCategory.social },
+    { category: "referral", views: a.byCategory.referral },
+  ];
+
+  const durationBuckets = DURATION_BUCKET_LABELS.map((bucket) => ({
+    bucket,
+    sessions: a.byDuration.get(bucket) ?? 0,
+  }));
+
+  const dayOfWeek: number[] = Array(7).fill(0);
+  const hourOfDay: number[] = Array(24).fill(0);
+  for (let d = 0; d < 7; d++) {
+    for (let h = 0; h < 24; h++) {
+      const v = a.heatmap[d]?.[h] ?? 0;
+      dayOfWeek[d] = (dayOfWeek[d] ?? 0) + v;
+      hourOfDay[h] = (hourOfDay[h] ?? 0) + v;
+    }
+  }
+
+  // Recent live feed: last 20 events by ts
+  const recentEvents: SiteSnapshot["recentEvents"] = [];
+  const startSlice = Math.max(0, all.length - 20);
+  for (let i = all.length - 1; i >= startSlice; i--) {
+    const ev = all[i];
+    if (!ev) continue;
+    const w0 = Array.isArray(ev.v) && typeof ev.v[0] === "number" ? ev.v[0] : 0;
+    const w1 = Array.isArray(ev.v) && typeof ev.v[1] === "number" ? ev.v[1] : 0;
+    recentEvents.push({
+      path: ev.p,
+      referrer: ev.r,
+      ts: ev.ts,
+      viewport: [w0, w1],
+    });
+  }
+
   const liveSessions = new Set<string>();
   const liveStart = now - LIVE_WINDOW_MS;
   // Walk back from the end since recent events cluster there.
@@ -262,10 +410,19 @@ export function snapshot(siteId: string, range: Range): SiteSnapshot {
     pageviews: pageviewsDelta,
     bounce: delta(bounceCur, bouncePrev),
     avgDurationSec: delta(durCurMs / 1000, durPrevMs / 1000),
+    pagesPerSession: delta(ppsCur, ppsPrev),
     series,
     topPages,
     topReferrers,
+    topEntryPages,
+    topExitPages,
     devices,
+    referrerCategories,
+    durationBuckets,
+    hourlyHeatmap: a.heatmap,
+    dayOfWeek,
+    hourOfDay,
+    recentEvents,
     liveVisitors: liveSessions.size,
   };
 }

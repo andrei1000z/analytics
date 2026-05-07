@@ -25,6 +25,11 @@ import { KpiCard } from "./widgets/KpiCard";
 import { AreaChart } from "./widgets/AreaChart";
 import { TopList } from "./widgets/TopList";
 import { DeviceBreakdown } from "./widgets/DeviceBreakdown";
+import { Heatmap } from "./widgets/Heatmap";
+import { ReferrerBreakdown } from "./widgets/ReferrerBreakdown";
+import { DurationHistogram } from "./widgets/DurationHistogram";
+import { LiveFeed } from "./widgets/LiveFeed";
+import { WeekdayBars } from "./widgets/WeekdayBars";
 import { EmbedSnippet } from "./EmbedSnippet";
 import { compact } from "@/lib/format";
 
@@ -125,7 +130,7 @@ export function SiteOverview({ site }: { site: Site }): ReactNode {
         />
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             <KpiCard
               label="Vizitatori"
               icon={Users}
@@ -154,6 +159,13 @@ export function SiteOverview({ site }: { site: Site }): ReactNode {
               icon={Timer}
               delta={snap.avgDurationSec}
               format={formatDuration}
+              goodWhen="up"
+            />
+            <KpiCard
+              label="Pagini / sesiune"
+              icon={Activity}
+              delta={snap.pagesPerSession}
+              format={(n) => n.toFixed(2)}
               goodWhen="up"
             />
           </div>
@@ -195,6 +207,38 @@ export function SiteOverview({ site }: { site: Site }): ReactNode {
             />
             <DeviceBreakdown devices={snap.devices} />
           </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <TopList
+              title="Pagini de intrare"
+              icon={Send}
+              items={snap.topEntryPages.map((e) => ({ path: e.path, views: e.sessions }))}
+              labelOf={(p) => (
+                <span className="font-mono text-[13px] tracking-tight text-text-main">
+                  {p.path}
+                </span>
+              )}
+            />
+            <TopList
+              title="Pagini de ieșire"
+              icon={ExternalLink}
+              items={snap.topExitPages.map((e) => ({ path: e.path, views: e.sessions }))}
+              labelOf={(p) => (
+                <span className="font-mono text-[13px] tracking-tight text-text-main">
+                  {p.path}
+                </span>
+              )}
+            />
+            <ReferrerBreakdown categories={snap.referrerCategories} />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <Heatmap data={snap.hourlyHeatmap} />
+            <WeekdayBars data={snap.dayOfWeek} />
+            <DurationHistogram buckets={snap.durationBuckets} />
+          </div>
+
+          <LiveFeed events={snap.recentEvents} />
 
           <details className="glass-card group rounded-3xl p-5 open:pb-6">
             <summary className="flex cursor-pointer items-center justify-between gap-3 list-none [&::-webkit-details-marker]:hidden">
