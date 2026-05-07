@@ -24,6 +24,10 @@ type StoreState = {
   collections: Record<string, Collection>;
   activeSiteId: string | null;
   range: Range;
+  ingestUrl: string;
+  /** Live passphrase, NEVER persisted to disk. Cleared on page reload. */
+  syncPassphrase: string | null;
+  syncLastConnectedAt: number | null;
   paletteOpen: boolean;
   settingsOpen: boolean;
   confirmIntent: ConfirmIntent | null;
@@ -42,6 +46,8 @@ type StoreActions = {
   createCollection: (name: string) => string;
   toggleCollection: (collectionId: string) => void;
   setRange: (range: Range) => void;
+  setIngestUrl: (url: string) => void;
+  setSyncPassphrase: (passphrase: string | null) => void;
   setPaletteOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
   setConfirmIntent: (intent: ConfirmIntent | null) => void;
@@ -87,11 +93,14 @@ const SEED: Pick<StoreState, "sites" | "collections"> = (() => {
 
 export const useStore = create<StoreState & StoreActions>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       sites: SEED.sites,
       collections: SEED.collections,
       activeSiteId: null,
       range: "7d",
+      ingestUrl: "",
+      syncPassphrase: null,
+      syncLastConnectedAt: null,
       paletteOpen: false,
       settingsOpen: false,
       confirmIntent: null,
@@ -155,6 +164,8 @@ export const useStore = create<StoreState & StoreActions>()(
         }),
 
       setRange: (range) => set({ range }),
+      setIngestUrl: (ingestUrl) => set({ ingestUrl }),
+      setSyncPassphrase: (syncPassphrase) => set({ syncPassphrase }),
       setPaletteOpen: (paletteOpen) => set({ paletteOpen }),
       setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
       setConfirmIntent: (confirmIntent) => set({ confirmIntent }),
@@ -166,7 +177,18 @@ export const useStore = create<StoreState & StoreActions>()(
           activeSiteId: null,
         }),
 
-      setSyncStatus: (syncStatus) => set({ syncStatus }),
+      setSyncStatus: (syncStatus) => {
+        const wasConnected = get().syncStatus === "connected";
+        const isNowConnected = syncStatus === "connected";
+        set({
+          syncStatus,
+          syncLastConnectedAt: isNowConnected
+            ? Date.now()
+            : wasConnected
+              ? get().syncLastConnectedAt ?? Date.now()
+              : get().syncLastConnectedAt,
+        });
+      },
     }),
     {
       name: "analytics:v1",
@@ -177,6 +199,8 @@ export const useStore = create<StoreState & StoreActions>()(
         collections: state.collections,
         activeSiteId: state.activeSiteId,
         range: state.range,
+        ingestUrl: state.ingestUrl,
+        // syncPassphrase is intentionally NEVER persisted (zero-knowledge invariant)
       }),
       migrate: (persisted, _version) => {
         const partial = persisted as Partial<StoreState> | null | undefined;
@@ -185,6 +209,7 @@ export const useStore = create<StoreState & StoreActions>()(
           collections: partial?.collections ?? SEED.collections,
           activeSiteId: partial?.activeSiteId ?? null,
           range: partial?.range ?? "7d",
+          ingestUrl: partial?.ingestUrl ?? "",
         } as Partial<StoreState> as never;
       },
     },

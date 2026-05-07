@@ -3,6 +3,7 @@ import { useStore } from "@/store/useStore";
 import { useDesktop } from "@/hooks/useMediaQuery";
 import { useHotkeys } from "@/hooks/useHotkeys";
 import { useTheme } from "@/hooks/useTheme";
+import { useSync } from "@/hooks/useSync";
 import { Sidebar } from "@/components/Sidebar";
 import { MainPane } from "@/components/MainPane";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -13,6 +14,8 @@ import { cn } from "@/lib/cn";
 export default function App(): ReactNode {
   // Initialize theme + listen to system changes
   useTheme();
+  // Mount the global E2E sync client (driven by ingestUrl + syncPassphrase)
+  useSync();
 
   const activeSiteId = useStore((s) => s.activeSiteId);
   const sitesMap = useStore((s) => s.sites);
