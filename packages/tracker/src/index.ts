@@ -73,6 +73,15 @@ if (!W.__an && SUB) {
         return s;
       })();
 
+      // Visitor IANA timezone — coarse country approximation (~hundreds of
+      // buckets globally), far less identifying than IP. Privacy-honest.
+      let tz = "";
+      try {
+        tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+      } catch {
+        /* old browser */
+      }
+
       const send = async (path: string): Promise<void> => {
         if (!keyP) keyP = importKey();
         const key = await keyP;
@@ -83,6 +92,7 @@ if (!W.__an && SUB) {
           v: [W.innerWidth, W.innerHeight],
           ts: Date.now(),
           n: nonce,
+          tz,
         });
         const ct = new Uint8Array(
           await SUB.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(json)),

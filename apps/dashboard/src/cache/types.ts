@@ -21,6 +21,8 @@ export type DecryptedEvent = {
   ts: number;
   /** Per-tab session nonce (4 hex bytes) — same for every event from one tab session */
   n: string;
+  /** IANA timezone (e.g. "Europe/Bucharest"). Used to approximate country. */
+  tz?: string | undefined;
 };
 
 export type Bucket = {
@@ -69,4 +71,14 @@ export type SiteSnapshot = {
   recentEvents: Array<{ path: string; referrer: string; ts: number; viewport: [number, number] }>;
   /** Distinct sessions seen in the last 60 seconds. */
   liveVisitors: number;
+  /** Country approximation by visitor timezone (top 10). */
+  countries: Array<{ code: string; name: string; sessions: number }>;
+  /** Sessions per minute over the last 30 minutes (30 entries, oldest → newest). */
+  activePerMinute: number[];
+  /** Pageviews-per-session histogram: 1 / 2 / 3-5 / 6-10 / 11+ */
+  pagesPerSessionHistogram: Array<{ bucket: string; sessions: number }>;
+  /** Pages with biggest growth vs previous window (top 6). */
+  trendingPages: Array<{ path: string; current: number; previous: number; ratio: number }>;
+  /** Viewport size buckets (640/1024/1440/1920+). */
+  viewportBuckets: Array<{ label: string; views: number }>;
 };

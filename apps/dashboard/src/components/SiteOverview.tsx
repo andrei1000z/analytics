@@ -30,6 +30,10 @@ import { ReferrerBreakdown } from "./widgets/ReferrerBreakdown";
 import { DurationHistogram } from "./widgets/DurationHistogram";
 import { LiveFeed } from "./widgets/LiveFeed";
 import { WeekdayBars } from "./widgets/WeekdayBars";
+import { ActivePerMinute } from "./widgets/ActivePerMinute";
+import { Countries } from "./widgets/Countries";
+import { TrendingPages } from "./widgets/TrendingPages";
+import { PagesPerSession } from "./widgets/PagesPerSession";
 import { EmbedSnippet } from "./EmbedSnippet";
 import { compact } from "@/lib/format";
 
@@ -236,6 +240,16 @@ export function SiteOverview({ site }: { site: Site }): ReactNode {
             <Heatmap data={snap.hourlyHeatmap} />
             <WeekdayBars data={snap.dayOfWeek} />
             <DurationHistogram buckets={snap.durationBuckets} />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <ActivePerMinute data={snap.activePerMinute} liveCount={snap.liveVisitors} />
+            <TrendingPages pages={snap.trendingPages} />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Countries countries={snap.countries} />
+            <PagesPerSession histogram={snap.pagesPerSessionHistogram} />
           </div>
 
           <LiveFeed events={snap.recentEvents} />

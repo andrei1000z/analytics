@@ -20,6 +20,7 @@ import type {
   SiteSnapshot,
 } from "./types";
 import { RANGE_HOURS } from "./types";
+import { tzToCountry } from "@/lib/tzCountry";
 
 const HOUR_MS = 60 * 60 * 1000;
 const MAX_EVENTS_PER_SITE = 200_000;
@@ -403,6 +404,98 @@ export function snapshot(siteId: string, range: Range): SiteSnapshot {
     if (typeof ev.n === "string") liveSessions.add(ev.n);
   }
 
+  // Countries from timezones (current window only).
+  const countryMap = new Map<string, { name: string; sessions: number }>();
+  const tzSeen = new Map<string, Set<string>>();
+  for (const ev of cur) {
+    if (typeof ev.tz !== "string" || ev.tz.length === 0) continue;
+    if (typeof ev.n !== "string") continue;
+    let s = tzSeen.get(ev.tz);
+    if (!s) {
+      s = new Set();
+      tzSeen.set(ev.tz, s);
+    }
+    s.add(ev.n);
+  }
+  for (const [tz, sessionSet] of tzSeen) {
+    const meta = tzToCountry(tz);
+    const entry = countryMap.get(meta.code);
+    if (entry) entry.sessions += sessionSet.size;
+    else countryMap.set(meta.code, { name: meta.name, sessions: sessionSet.size });
+  }
+  const countries = Array.from(countryMap, ([code, v]) => ({
+    code,
+    name: v.name,
+    sessions: v.sessions,
+  }))
+    .sort((x, y) => y.sessions - x.sessions)
+    .slice(0, 10);
+
+  // Active per minute over the last 30 minutes
+  const activePerMinute: number[] = new Array(30).fill(0);
+  const minuteStart = now - 30 * 60 * 1000;
+  for (let i = all.length - 1; i >= 0; i--) {
+    const ev = all[i];
+    if (!ev || ev.ts < minuteStart) break;
+    const idx = Math.floor((ev.ts - minuteStart) / 60_000);
+    if (idx >= 0 && idx < 30) activePerMinute[idx] = (activePerMinute[idx] ?? 0) + 1;
+  }
+
+  // Pages-per-session histogram (current window only)
+  const ppsHist = { b1: 0, b2: 0, b35: 0, b610: 0, b11: 0 };
+  const sessCounts = new Map<string, number>();
+  for (const ev of cur) {
+    if (typeof ev.n !== "string") continue;
+    sessCounts.set(ev.n, (sessCounts.get(ev.n) ?? 0) + 1);
+  }
+  for (const c of sessCounts.values()) {
+    if (c <= 1) ppsHist.b1 += 1;
+    else if (c === 2) ppsHist.b2 += 1;
+    else if (c <= 5) ppsHist.b35 += 1;
+    else if (c <= 10) ppsHist.b610 += 1;
+    else ppsHist.b11 += 1;
+  }
+  const pagesPerSessionHistogram = [
+    { bucket: "1", sessions: ppsHist.b1 },
+    { bucket: "2", sessions: ppsHist.b2 },
+    { bucket: "3-5", sessions: ppsHist.b35 },
+    { bucket: "6-10", sessions: ppsHist.b610 },
+    { bucket: "11+", sessions: ppsHist.b11 },
+  ];
+
+  // Trending pages: biggest growth ratio current vs previous window
+  const trending: Array<{ path: string; current: number; previous: number; ratio: number }> = [];
+  for (const [path, currentViews] of a.byPath) {
+    const previousViews = b.byPath.get(path) ?? 0;
+    const ratio =
+      previousViews > 0
+        ? (currentViews - previousViews) / previousViews
+        : currentViews > 0
+          ? Number.POSITIVE_INFINITY
+          : 0;
+    trending.push({ path, current: currentViews, previous: previousViews, ratio });
+  }
+  trending.sort((x, y) => {
+    const xi = !Number.isFinite(x.ratio);
+    const yi = !Number.isFinite(y.ratio);
+    if (xi && yi) return y.current - x.current;
+    if (xi) return -1;
+    if (yi) return 1;
+    return y.ratio - x.ratio;
+  });
+  const trendingPages = trending.filter((p) => p.current > 0).slice(0, 6);
+
+  // Viewport buckets
+  const vpMap = new Map<string, number>();
+  for (const ev of cur) {
+    const w = Array.isArray(ev.v) && typeof ev.v[0] === "number" ? ev.v[0] : 0;
+    const label = w === 0 ? "?" : w < 640 ? "<640" : w < 1024 ? "640-1024" : w < 1440 ? "1024-1440" : w < 1920 ? "1440-1920" : "1920+";
+    vpMap.set(label, (vpMap.get(label) ?? 0) + 1);
+  }
+  const viewportBuckets = Array.from(vpMap, ([label, views]) => ({ label, views })).sort(
+    (x, y) => y.views - x.views,
+  );
+
   return {
     range,
     totalEvents: total,
@@ -424,6 +517,11 @@ export function snapshot(siteId: string, range: Range): SiteSnapshot {
     hourOfDay,
     recentEvents,
     liveVisitors: liveSessions.size,
+    countries,
+    activePerMinute,
+    pagesPerSessionHistogram,
+    trendingPages,
+    viewportBuckets,
   };
 }
 
