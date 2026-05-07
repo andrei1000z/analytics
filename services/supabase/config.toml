@@ -1,0 +1,4 @@
+project_id = "analytics-ingest"
+
+[functions.e]
+verify_jwt = false
