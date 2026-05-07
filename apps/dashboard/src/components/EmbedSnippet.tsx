@@ -5,21 +5,28 @@ import { cn } from "@/lib/cn";
 
 export function EmbedSnippet({
   trackerUrl,
+  ingestUrl,
   keyHex,
   roomId,
   className,
 }: {
   trackerUrl: string;
+  ingestUrl: string;
   keyHex: string;
   roomId: string;
   className?: string | undefined;
 }): ReactNode {
   const [copied, setCopied] = useState(false);
-  const ready = trackerUrl.trim().length > 0 && keyHex.length > 0 && roomId.length === 64;
+  const trackerHost = trackerUrl.trim();
+  const ingestHost = ingestUrl.trim();
+  const sameOrigin = trackerHost === ingestHost;
+  const ready = trackerHost.length > 0 && keyHex.length > 0 && roomId.length === 64;
 
   const snippet = ready
-    ? `<script\n  src="${trackerUrl.replace(/\/+$/, "")}/t.js#${keyHex}"\n  data-site="${roomId}"\n  defer\n></script>`
-    : `<!-- Configurează trackerUrl în Setări sau deblochează site-ul cu passphrase. -->`;
+    ? sameOrigin
+      ? `<script\n  src="${trackerHost.replace(/\/+$/, "")}/t.js#${keyHex}"\n  data-site="${roomId}"\n  defer\n></script>`
+      : `<script\n  src="${trackerHost.replace(/\/+$/, "")}/t.js#${keyHex}"\n  data-site="${roomId}"\n  data-ingest="${ingestHost.replace(/\/+$/, "")}"\n  defer\n></script>`
+    : `<!-- Configurează ingest URL + tracker URL în Setări sau deblochează site-ul. -->`;
 
   async function copy(): Promise<void> {
     try {

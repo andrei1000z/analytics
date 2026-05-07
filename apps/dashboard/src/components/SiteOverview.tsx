@@ -119,6 +119,7 @@ export function SiteOverview({ site }: { site: Site }): ReactNode {
       {events === 0 ? (
         <AwaitingEvents
           trackerUrl={trackerHost}
+          ingestUrl={ingestUrl}
           keyHex={session.keyHex}
           roomId={session.roomId}
         />
@@ -206,6 +207,7 @@ export function SiteOverview({ site }: { site: Site }): ReactNode {
             <div className="mt-4">
               <EmbedSnippet
                 trackerUrl={trackerHost}
+                ingestUrl={ingestUrl}
                 keyHex={session.keyHex}
                 roomId={session.roomId}
               />
@@ -349,10 +351,12 @@ function LockedHero({
 
 function AwaitingEvents({
   trackerUrl,
+  ingestUrl,
   keyHex,
   roomId,
 }: {
   trackerUrl: string;
+  ingestUrl: string;
   keyHex: string;
   roomId: string;
 }): ReactNode {
@@ -378,7 +382,12 @@ function AwaitingEvents({
         </p>
       </div>
 
-      <EmbedSnippet trackerUrl={trackerUrl} keyHex={keyHex} roomId={roomId} />
+      <EmbedSnippet
+        trackerUrl={trackerUrl}
+        ingestUrl={ingestUrl}
+        keyHex={keyHex}
+        roomId={roomId}
+      />
     </div>
   );
 }

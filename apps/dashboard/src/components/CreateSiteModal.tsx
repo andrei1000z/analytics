@@ -274,6 +274,7 @@ export function CreateSiteModal(): ReactNode {
 
                   <EmbedSnippet
                     trackerUrl={trackerHost}
+                    ingestUrl={ingestUrl}
                     keyHex={createdSnippet.keyHex}
                     roomId={createdSnippet.roomId}
                   />

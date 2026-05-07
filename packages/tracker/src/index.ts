@@ -36,7 +36,12 @@ if (!W.__an && SUB) {
   if (script && site && src) {
     const u = new URL(src);
     const keyB64 = u.hash.slice(1);
-    const ingest = u.origin + "/e?s=" + encodeURIComponent(site);
+    // Beacon target: data-ingest if present (cross-origin deploy where the
+    // tracker JS is on a CDN and the ingest server is elsewhere), else the
+    // script's own origin (single-host deploy).
+    const dataIngest = script.dataset.ingest;
+    const ingestBase = dataIngest && dataIngest.length > 0 ? dataIngest : u.origin;
+    const ingest = ingestBase.replace(/\/+$/, "") + "/e?s=" + encodeURIComponent(site);
 
     if (keyB64) {
       let keyP: Promise<CryptoKey> | null = null;
