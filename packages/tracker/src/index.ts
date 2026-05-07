@@ -90,7 +90,10 @@ if (!W.__an && SUB) {
         const body = new Uint8Array(iv.length + ct.length);
         body.set(iv, 0);
         body.set(ct, iv.length);
-        W.navigator.sendBeacon(ingest, new Blob([body], { type: "application/octet-stream" }));
+        // text/plain is a CORS-safelisted content-type → no preflight, no
+        // wildcard-vs-credentials clash when the embedding site has cookies.
+        // The server reads the body as raw bytes regardless of MIME.
+        W.navigator.sendBeacon(ingest, new Blob([body], { type: "text/plain" }));
       };
 
       const track = (): void => {
