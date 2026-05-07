@@ -13,14 +13,22 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon-16.png", "favicon-32.png", "apple-touch-icon.png"],
       manifest: {
+        id: "/?source=pwa",
         name: "Analytics — EU privacy-first",
         short_name: "Analytics",
-        description: "Privacy-first, EU-sovereign, zero-knowledge web analytics.",
+        description:
+          "Privacy-first, EU-sovereign, zero-knowledge web analytics. AES-GCM-256 ciphertext at rest. No cookies, no IPs.",
+        lang: "ro",
+        dir: "ltr",
+        categories: ["productivity", "business", "developer"],
         theme_color: "#003399",
-        background_color: "#ffffff",
+        background_color: "#0a0a0c",
         display: "standalone",
+        display_override: ["window-controls-overlay", "standalone"],
+        orientation: "any",
         scope: "/",
-        start_url: "/",
+        start_url: "/?source=pwa",
+        prefer_related_applications: false,
         icons: [
           { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
           { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
@@ -30,13 +38,29 @@ export default defineConfig({
             type: "image/png",
             purpose: "maskable",
           },
+          { src: "/icons/icon-1024.png", sizes: "1024x1024", type: "image/png", purpose: "any" },
+        ],
+        shortcuts: [
+          {
+            name: "Site nou",
+            short_name: "Site nou",
+            description: "Adaugă un nou site cu passphrase E2E",
+            url: "/?action=create-site",
+          },
+          {
+            name: "Setări",
+            short_name: "Setări",
+            description: "Endpoint-uri ingest + tracker",
+            url: "/?action=settings",
+          },
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,png,woff2,ico}"],
+        globPatterns: ["**/*.{js,css,html,svg,png,woff2,ico,webmanifest}"],
         cleanupOutdatedCaches: true,
         clientsClaim: true,
         skipWaiting: true,
+        navigateFallback: "index.html",
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -54,6 +78,8 @@ export default defineConfig({
           },
         ],
       },
+      // Don't precache JS source maps — they bloat the SW + leak source paths.
+      injectManifest: undefined,
     }),
   ],
   resolve: {

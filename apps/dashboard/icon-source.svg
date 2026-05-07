@@ -3,10 +3,62 @@
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#3366cc"/>
-      <stop offset="1" stop-color="#003399"/>
+      <stop offset="0.55" stop-color="#0a3aa8"/>
+      <stop offset="1" stop-color="#001f5e"/>
+    </linearGradient>
+    <radialGradient id="topGloss" cx="0.35" cy="0.18" r="0.55">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="accentGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFCC00" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#FFCC00" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="bar1" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.78"/>
+    </linearGradient>
+    <linearGradient id="bar2" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.65"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0.92"/>
+    </linearGradient>
+    <linearGradient id="bar3" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.88"/>
+      <stop offset="1" stop-color="#FFFFFF"/>
     </linearGradient>
   </defs>
-  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
-  <circle cx="512" cy="248" r="14" fill="#FFCC00"/>
-  <path d="M384 720 L512 304 L640 720 H584 L555 624 H469 L440 720 H384 Z M488 568 H536 L512 480 Z" fill="#ffffff"/>
+
+  <!-- Rounded square base with deep EU blue gradient -->
+  <rect width="1024" height="1024" rx="232" fill="url(#bg)"/>
+
+  <!-- Top gloss highlight (Liquid Glass refraction hint) -->
+  <rect width="1024" height="1024" rx="232" fill="url(#topGloss)"/>
+
+  <!-- Subtle EU stars ring (12 stars in a faint arc — only top half visible) -->
+  <g fill="#FFFFFF" opacity="0.10">
+    <circle cx="512" cy="172" r="12"/>
+    <circle cx="600" cy="186" r="10"/>
+    <circle cx="424" cy="186" r="10"/>
+    <circle cx="684" cy="222" r="9"/>
+    <circle cx="340" cy="222" r="9"/>
+    <circle cx="752" cy="280" r="8"/>
+    <circle cx="272" cy="280" r="8"/>
+  </g>
+
+  <!-- Yellow EU accent glow behind the rising peak -->
+  <circle cx="704" cy="324" r="180" fill="url(#accentGlow)"/>
+
+  <!-- Trio of rising bars — analytics motif -->
+  <rect x="248" y="616" width="124" height="200" rx="42" fill="url(#bar1)"/>
+  <rect x="412" y="488" width="124" height="328" rx="42" fill="url(#bar2)"/>
+  <rect x="576" y="324" width="124" height="492" rx="42" fill="url(#bar3)"/>
+
+  <!-- Yellow EU star sitting atop the tallest bar -->
+  <g transform="translate(704, 268)">
+    <circle r="42" fill="#FFCC00"/>
+    <circle r="42" stroke="#FFFFFF" stroke-width="6" stroke-opacity="0.45"/>
+  </g>
+
+  <!-- Soft bottom drop edge — gives the icon a tactile, glass feel -->
+  <rect width="1024" height="1024" rx="232" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-opacity="0.10"/>
 </svg>

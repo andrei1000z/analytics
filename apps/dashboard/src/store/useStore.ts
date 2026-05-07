@@ -8,6 +8,8 @@ export type Site = {
   name: string;
   domain: string;
   collectionId: string | null;
+  /** Hex-encoded 32-byte PBKDF2 derivative — public, what the server learns. */
+  roomId: string;
   createdAt: number;
 };
 
@@ -17,94 +19,63 @@ export type Collection = {
   expanded: boolean;
 };
 
-export type SyncStatus = "idle" | "connecting" | "connected" | "offline" | "error";
+export type ConfirmIntent =
+  | { kind: "delete-site"; siteId: string }
+  | { kind: "delete-all" };
 
 type StoreState = {
   sites: Record<string, Site>;
   collections: Record<string, Collection>;
   activeSiteId: string | null;
   range: Range;
+  /** Global ingest server URL. Operators usually point at a single VPS. */
   ingestUrl: string;
-  /** Live passphrase, NEVER persisted to disk. Cleared on page reload. */
-  syncPassphrase: string | null;
-  syncLastConnectedAt: number | null;
+  /** Where the embeddable tracker is served from. Defaults to ingestUrl when empty. */
+  trackerUrl: string;
   paletteOpen: boolean;
   settingsOpen: boolean;
+  createOpen: boolean;
+  unlockSiteId: string | null;
   confirmIntent: ConfirmIntent | null;
-  syncStatus: SyncStatus;
 };
-
-export type ConfirmIntent =
-  | { kind: "delete-site"; siteId: string }
-  | { kind: "delete-all" };
 
 type StoreActions = {
   selectSite: (siteId: string | null) => void;
-  createSite: (input: { name: string; domain: string; collectionId?: string | null }) => string;
+  createSite: (input: {
+    name: string;
+    domain: string;
+    roomId: string;
+    collectionId?: string | null;
+  }) => string;
   renameSite: (siteId: string, name: string) => void;
   deleteSite: (siteId: string) => void;
   createCollection: (name: string) => string;
   toggleCollection: (collectionId: string) => void;
   setRange: (range: Range) => void;
   setIngestUrl: (url: string) => void;
-  setSyncPassphrase: (passphrase: string | null) => void;
+  setTrackerUrl: (url: string) => void;
   setPaletteOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
+  setCreateOpen: (open: boolean) => void;
+  setUnlockSiteId: (siteId: string | null) => void;
   setConfirmIntent: (intent: ConfirmIntent | null) => void;
   deleteAll: () => void;
-  setSyncStatus: (status: SyncStatus) => void;
 };
-
-const SEED: Pick<StoreState, "sites" | "collections"> = (() => {
-  const colId = "col_seed_acme";
-  const now = Date.now();
-  const s1 = "site_seed_public";
-  const s2 = "site_seed_staging";
-  const s3 = "site_seed_docs";
-  return {
-    collections: {
-      [colId]: { id: colId, name: "Acme", expanded: true },
-    },
-    sites: {
-      [s1]: {
-        id: s1,
-        name: "Acme Public",
-        domain: "acme.eu",
-        collectionId: null,
-        createdAt: now - 86_400_000 * 12,
-      },
-      [s2]: {
-        id: s2,
-        name: "Acme Staging",
-        domain: "staging.acme.eu",
-        collectionId: colId,
-        createdAt: now - 86_400_000 * 4,
-      },
-      [s3]: {
-        id: s3,
-        name: "Documentație",
-        domain: "docs.acme.eu",
-        collectionId: colId,
-        createdAt: now - 86_400_000 * 2,
-      },
-    },
-  };
-})();
 
 export const useStore = create<StoreState & StoreActions>()(
   persist(
-    (set, get) => ({
-      sites: SEED.sites,
-      collections: SEED.collections,
+    (set) => ({
+      sites: {},
+      collections: {},
       activeSiteId: null,
       range: "7d",
       ingestUrl: "",
-      syncPassphrase: null,
-      syncLastConnectedAt: null,
+      trackerUrl: "",
       paletteOpen: false,
       settingsOpen: false,
+      createOpen: false,
+      unlockSiteId: null,
       confirmIntent: null,
-      syncStatus: "idle",
 
       selectSite: (siteId) => set({ activeSiteId: siteId }),
 
@@ -115,6 +86,7 @@ export const useStore = create<StoreState & StoreActions>()(
           name: input.name,
           domain: input.domain,
           collectionId: input.collectionId ?? null,
+          roomId: input.roomId,
           createdAt: Date.now(),
         };
         set((state) => ({
@@ -165,9 +137,11 @@ export const useStore = create<StoreState & StoreActions>()(
 
       setRange: (range) => set({ range }),
       setIngestUrl: (ingestUrl) => set({ ingestUrl }),
-      setSyncPassphrase: (syncPassphrase) => set({ syncPassphrase }),
+      setTrackerUrl: (trackerUrl) => set({ trackerUrl }),
       setPaletteOpen: (paletteOpen) => set({ paletteOpen }),
       setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
+      setCreateOpen: (createOpen) => set({ createOpen }),
+      setUnlockSiteId: (unlockSiteId) => set({ unlockSiteId }),
       setConfirmIntent: (confirmIntent) => set({ confirmIntent }),
 
       deleteAll: () =>
@@ -176,40 +150,40 @@ export const useStore = create<StoreState & StoreActions>()(
           collections: {},
           activeSiteId: null,
         }),
-
-      setSyncStatus: (syncStatus) => {
-        const wasConnected = get().syncStatus === "connected";
-        const isNowConnected = syncStatus === "connected";
-        set({
-          syncStatus,
-          syncLastConnectedAt: isNowConnected
-            ? Date.now()
-            : wasConnected
-              ? get().syncLastConnectedAt ?? Date.now()
-              : get().syncLastConnectedAt,
-        });
-      },
     }),
     {
-      name: "analytics:v1",
+      name: "analytics:v2",
       storage: createJSONStorage(() => localStorage),
-      version: 1,
+      version: 2,
       partialize: (state) => ({
         sites: state.sites,
         collections: state.collections,
         activeSiteId: state.activeSiteId,
         range: state.range,
         ingestUrl: state.ingestUrl,
-        // syncPassphrase is intentionally NEVER persisted (zero-knowledge invariant)
+        trackerUrl: state.trackerUrl,
       }),
-      migrate: (persisted, _version) => {
+      migrate: (persisted, version) => {
         const partial = persisted as Partial<StoreState> | null | undefined;
+        // v1 → v2: sites schema added `roomId` (no longer derivable from old seeds).
+        // Drop legacy seeds; user re-creates real sites with passphrases.
+        if (version < 2) {
+          return {
+            sites: {},
+            collections: partial?.collections ?? {},
+            activeSiteId: null,
+            range: partial?.range ?? "7d",
+            ingestUrl: partial?.ingestUrl ?? "",
+            trackerUrl: partial?.trackerUrl ?? "",
+          } as Partial<StoreState> as never;
+        }
         return {
-          sites: partial?.sites ?? SEED.sites,
-          collections: partial?.collections ?? SEED.collections,
+          sites: partial?.sites ?? {},
+          collections: partial?.collections ?? {},
           activeSiteId: partial?.activeSiteId ?? null,
           range: partial?.range ?? "7d",
           ingestUrl: partial?.ingestUrl ?? "",
+          trackerUrl: partial?.trackerUrl ?? "",
         } as Partial<StoreState> as never;
       },
     },

@@ -58,6 +58,16 @@ if (!W.__an && SUB) {
         }
       };
 
+      // Per-tab session nonce — same value for every beacon emitted from this
+      // tab session. Lives in closure memory only; never read from / written to
+      // any storage. Tab close = nonce gone = next visit counted as new visitor.
+      const nonce = ((): string => {
+        const r = W.crypto.getRandomValues(new Uint8Array(4));
+        let s = "";
+        for (const b of r) s += b.toString(16).padStart(2, "0");
+        return s;
+      })();
+
       const send = async (path: string): Promise<void> => {
         if (!keyP) keyP = importKey();
         const key = await keyP;
@@ -67,6 +77,7 @@ if (!W.__an && SUB) {
           r: refHost(),
           v: [W.innerWidth, W.innerHeight],
           ts: Date.now(),
+          n: nonce,
         });
         const ct = new Uint8Array(
           await SUB.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(json)),

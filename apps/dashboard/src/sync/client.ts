@@ -1,5 +1,5 @@
 import { base64ToBytes, decryptEvent } from "./crypto";
-import type { SyncStatus } from "@/store/useStore";
+import type { SyncStatus } from "@/store/useSessions";
 
 export type SyncEvent = {
   /** Bucket timestamp from server (ms). For live, equals receive time. */

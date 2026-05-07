@@ -20,7 +20,7 @@ export function MainPane(): ReactNode {
   const activeSiteId = useStore((s) => s.activeSiteId);
   const selectSite = useStore((s) => s.selectSite);
   const setPaletteOpen = useStore((s) => s.setPaletteOpen);
-  const createSite = useStore((s) => s.createSite);
+  const setCreateOpen = useStore((s) => s.setCreateOpen);
 
   const activeSite = activeSiteId ? sitesMap[activeSiteId] : undefined;
   const modLabel = isAppleDevice ? "⌘" : "Ctrl";
@@ -35,14 +35,14 @@ export function MainPane(): ReactNode {
           description={
             hasAnySite
               ? "Alege un site din panoul lateral sau deschide paleta de comenzi pentru navigare rapidă."
-              : "Suveranitate europeană prin matematică. Adaugă primul tău site și începe colectarea anonimă."
+              : "Suveranitate europeană prin matematică. Creează primul site și instalează snippet-ul ≤ 1 KB pe pagina ta."
           }
           action={
             hasAnySite
               ? { label: "Paletă comenzi", onClick: () => setPaletteOpen(true), icon: Plus }
               : {
-                  label: "Site nou",
-                  onClick: () => createSite({ name: "Primul site", domain: "exemplu.eu" }),
+                  label: "Creează primul site",
+                  onClick: () => setCreateOpen(true),
                   icon: Plus,
                 }
           }

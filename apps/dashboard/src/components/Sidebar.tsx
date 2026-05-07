@@ -12,13 +12,13 @@ import {
   Trash2,
 } from "lucide-react";
 import { useStore } from "@/store/useStore";
-import type { Collection, Site, SyncStatus } from "@/store/useStore";
+import type { Collection, Site } from "@/store/useStore";
+import { useSessions } from "@/store/useSessions";
 import { Kbd } from "./Kbd";
-import { StatusPill } from "./StatusPill";
 import { isAppleDevice } from "@/hooks/useHotkeys";
 import { cn } from "@/lib/cn";
 
-export function Sidebar({ syncStatus }: { syncStatus: SyncStatus }): ReactNode {
+export function Sidebar(): ReactNode {
   const sitesMap = useStore((s) => s.sites);
   const collectionsMap = useStore((s) => s.collections);
   const activeSiteId = useStore((s) => s.activeSiteId);
@@ -27,7 +27,8 @@ export function Sidebar({ syncStatus }: { syncStatus: SyncStatus }): ReactNode {
   const setPaletteOpen = useStore((s) => s.setPaletteOpen);
   const setConfirmIntent = useStore((s) => s.setConfirmIntent);
   const toggleCollection = useStore((s) => s.toggleCollection);
-  const createSite = useStore((s) => s.createSite);
+  const setCreateOpen = useStore((s) => s.setCreateOpen);
+  const sessions = useSessions((s) => s.sessions);
 
   const [query, setQuery] = useState("");
 
@@ -85,10 +86,7 @@ export function Sidebar({ syncStatus }: { syncStatus: SyncStatus }): ReactNode {
         </div>
         <button
           type="button"
-          onClick={() => {
-            const n = Object.keys(sitesMap).length + 1;
-            createSite({ name: `Site #${n}`, domain: `site-${n}.eu` });
-          }}
+          onClick={() => setCreateOpen(true)}
           className="inline-flex items-center justify-center rounded-xl border border-line bg-soft-elev p-1.5 text-text-muted shadow-soft-1 transition-all hover:-translate-y-px hover:text-eu-blue hover:shadow-soft-2 dark:hover:text-eu-blue-light"
           aria-label="Site nou"
           title="Site nou"
@@ -152,6 +150,7 @@ export function Sidebar({ syncStatus }: { syncStatus: SyncStatus }): ReactNode {
                       key={site.id}
                       site={site}
                       active={site.id === activeSiteId}
+                      connected={sessions[site.id]?.status === "connected"}
                       onSelect={() => selectSite(site.id)}
                       onDelete={() => setConfirmIntent({ kind: "delete-site", siteId: site.id })}
                     />
@@ -173,6 +172,7 @@ export function Sidebar({ syncStatus }: { syncStatus: SyncStatus }): ReactNode {
                   key={site.id}
                   site={site}
                   active={site.id === activeSiteId}
+                  connected={sessions[site.id]?.status === "connected"}
                   onSelect={() => selectSite(site.id)}
                   onDelete={() => setConfirmIntent({ kind: "delete-site", siteId: site.id })}
                 />
@@ -182,10 +182,19 @@ export function Sidebar({ syncStatus }: { syncStatus: SyncStatus }): ReactNode {
         ) : null}
 
         {grouped.collections.length === 0 && grouped.orphans.length === 0 ? (
-          <div className="px-3 py-8 text-center">
-            <p className="text-xs text-text-muted">
+          <div className="px-3 py-10 text-center">
+            <p className="text-xs leading-relaxed text-text-muted">
               {query.trim() ? `Nimic pentru „${query}".` : "Niciun site încă."}
             </p>
+            {!query.trim() ? (
+              <button
+                type="button"
+                onClick={() => setCreateOpen(true)}
+                className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-eu-blue px-3 py-1.5 text-xs font-medium text-white shadow-soft-1 transition-all hover:-translate-y-px hover:bg-eu-blue-light"
+              >
+                <Plus className="h-3.5 w-3.5" aria-hidden /> Creează primul site
+              </button>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -200,7 +209,10 @@ export function Sidebar({ syncStatus }: { syncStatus: SyncStatus }): ReactNode {
         >
           <SettingsIcon className="h-4 w-4" aria-hidden />
         </button>
-        <StatusPill status={syncStatus} />
+        <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.16em] text-text-faint">
+          <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
+          {Object.values(sessions).filter((s) => s.status === "connected").length} live
+        </span>
       </footer>
     </aside>
   );
@@ -209,11 +221,13 @@ export function Sidebar({ syncStatus }: { syncStatus: SyncStatus }): ReactNode {
 function SiteRow({
   site,
   active,
+  connected,
   onSelect,
   onDelete,
 }: {
   site: Site;
   active: boolean;
+  connected: boolean;
   onSelect: () => void;
   onDelete: () => void;
 }): ReactNode {
@@ -235,13 +249,21 @@ function SiteRow({
             aria-hidden
           />
         ) : null}
-        <Globe
-          className={cn(
-            "h-3.5 w-3.5 flex-none",
-            active ? "text-eu-blue dark:text-eu-blue-light" : "text-text-muted",
-          )}
-          aria-hidden
-        />
+        <span className="relative inline-flex h-3.5 w-3.5 flex-none items-center justify-center">
+          <Globe
+            className={cn(
+              "h-3.5 w-3.5",
+              active ? "text-eu-blue dark:text-eu-blue-light" : "text-text-muted",
+            )}
+            aria-hidden
+          />
+          {connected ? (
+            <span
+              className="absolute -right-0.5 -top-0.5 inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500 ring-2 ring-soft-elev"
+              aria-label="conectat"
+            />
+          ) : null}
+        </span>
         <span className="flex-1 truncate">{site.name}</span>
         <span className="hidden truncate text-[11px] text-text-faint sm:inline">{site.domain}</span>
       </button>

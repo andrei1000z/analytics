@@ -1,8 +1,8 @@
 /**
  * Zero-knowledge crypto helpers (per directive 5.1).
  *
- *   roomId  = PBKDF2-HMAC-SHA-256(passphrase, "salt-room-v1", 200_000)  // 32 bytes → public hex
- *   siteKey = PBKDF2-HMAC-SHA-256(passphrase, "salt-key-v1",  200_000)  // 32 bytes → AES-GCM key
+ *   roomId  = PBKDF2-HMAC-SHA-256(passphrase, "salt-room-v1", 200_000) → 32B → public hex
+ *   siteKey = PBKDF2-HMAC-SHA-256(passphrase, "salt-key-v1",  200_000) → 32B → AES-GCM key
  *
  * The passphrase NEVER leaves the device. The server only ever learns
  * `roomId` (a deterministic but irreversible derivative).
@@ -33,17 +33,41 @@ async function deriveBits(passphrase: string, saltStr: string, bits: number): Pr
   );
 }
 
-export async function deriveRoomId(passphrase: string): Promise<string> {
-  const buf = await deriveBits(passphrase, SALT_ROOM, 256);
-  const bytes = new Uint8Array(buf);
-  let hex = "";
-  for (const b of bytes) hex += b.toString(16).padStart(2, "0");
-  return hex;
+function bytesToHex(bytes: Uint8Array): string {
+  let s = "";
+  for (const b of bytes) s += b.toString(16).padStart(2, "0");
+  return s;
 }
 
-export async function deriveSiteKey(passphrase: string): Promise<CryptoKey> {
-  const buf = await deriveBits(passphrase, SALT_KEY, 256);
-  return crypto.subtle.importKey("raw", buf, { name: "AES-GCM" }, false, ["decrypt"]);
+export type DerivedKeys = {
+  /** 64-char hex of the room derivative (public, server learns). */
+  roomId: string;
+  /** AES-GCM CryptoKey for decryption. */
+  siteKey: CryptoKey;
+  /** Base64url-encoded raw key bytes — used in the embed URL fragment. */
+  keyHex: string;
+};
+
+export async function deriveKeys(passphrase: string): Promise<DerivedKeys> {
+  const [roomBuf, keyBuf] = await Promise.all([
+    deriveBits(passphrase, SALT_ROOM, 256),
+    deriveBits(passphrase, SALT_KEY, 256),
+  ]);
+  const roomId = bytesToHex(new Uint8Array(roomBuf));
+  const keyHex = bytesToBase64Url(new Uint8Array(keyBuf));
+  const siteKey = await crypto.subtle.importKey(
+    "raw",
+    keyBuf,
+    { name: "AES-GCM" },
+    false,
+    ["decrypt"],
+  );
+  return { roomId, siteKey, keyHex };
+}
+
+export async function deriveRoomId(passphrase: string): Promise<string> {
+  const buf = await deriveBits(passphrase, SALT_ROOM, 256);
+  return bytesToHex(new Uint8Array(buf));
 }
 
 /** Decrypts a `(iv || ciphertext-with-tag)` payload. Throws on auth failure. */
@@ -61,4 +85,10 @@ export function base64ToBytes(s: string): Uint8Array {
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
+}
+
+function bytesToBase64Url(bytes: Uint8Array): string {
+  let bin = "";
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }

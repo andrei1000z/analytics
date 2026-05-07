@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import type { ReactNode } from "react";
 import { useStore } from "@/store/useStore";
+import { useSessions } from "@/store/useSessions";
 import { useDesktop } from "@/hooks/useMediaQuery";
 import { useHotkeys } from "@/hooks/useHotkeys";
 import { useTheme } from "@/hooks/useTheme";
@@ -9,7 +11,11 @@ import { MainPane } from "@/components/MainPane";
 import { CommandPalette } from "@/components/CommandPalette";
 import { SettingsModal } from "@/components/SettingsModal";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { CreateSiteModal } from "@/components/CreateSiteModal";
+import { UnlockSiteModal } from "@/components/UnlockSiteModal";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import { AuthGate } from "@/auth/AuthGate";
+import { clearSite } from "@/cache";
 import { cn } from "@/lib/cn";
 
 export default function App(): ReactNode {
@@ -24,8 +30,7 @@ export default function App(): ReactNode {
 }
 
 function Shell(): ReactNode {
-  // Mount the global E2E sync client (driven by ingestUrl + syncPassphrase).
-  // Lives behind AuthGate so the WS only opens after the operator unlocks.
+  // Per-site sync clients keyed off the in-memory session map.
   useSync();
 
   const activeSiteId = useStore((s) => s.activeSiteId);
@@ -33,18 +38,26 @@ function Shell(): ReactNode {
   const paletteOpen = useStore((s) => s.paletteOpen);
   const settingsOpen = useStore((s) => s.settingsOpen);
   const confirmIntent = useStore((s) => s.confirmIntent);
-  const syncStatus = useStore((s) => s.syncStatus);
 
   const setPaletteOpen = useStore((s) => s.setPaletteOpen);
   const setSettingsOpen = useStore((s) => s.setSettingsOpen);
+  const setCreateOpen = useStore((s) => s.setCreateOpen);
   const setConfirmIntent = useStore((s) => s.setConfirmIntent);
-  const createSite = useStore((s) => s.createSite);
   const deleteSite = useStore((s) => s.deleteSite);
   const deleteAll = useStore((s) => s.deleteAll);
+  const lockSession = useSessions((s) => s.lock);
+  const lockAllSessions = useSessions((s) => s.lockAll);
 
   const desktop = useDesktop();
   const showSidebar = desktop || !activeSiteId;
   const showMain = desktop || activeSiteId !== null;
+
+  // Lock all sessions on tab close so passphrase never lingers in memory.
+  useEffect(() => {
+    const onUnload = (): void => lockAllSessions();
+    window.addEventListener("beforeunload", onUnload);
+    return () => window.removeEventListener("beforeunload", onUnload);
+  }, [lockAllSessions]);
 
   useHotkeys([
     {
@@ -56,10 +69,7 @@ function Shell(): ReactNode {
     {
       combo: "mod+=",
       preventDefault: true,
-      handler: () => {
-        const n = Object.keys(sitesMap).length + 1;
-        createSite({ name: `Site #${n}`, domain: `site-${n}.eu` });
-      },
+      handler: () => setCreateOpen(true),
     },
     {
       combo: "mod+,",
@@ -74,7 +84,7 @@ function Shell(): ReactNode {
       <AmbientBlobs />
       <div className="relative z-0 flex h-full w-full">
         <div className={cn(showSidebar ? "flex" : "hidden", "h-full md:flex md:flex-none")}>
-          <Sidebar syncStatus={syncStatus} />
+          <Sidebar />
         </div>
         <div className={cn(showMain ? "flex" : "hidden", "h-full flex-1 md:flex")}>
           <MainPane />
@@ -90,6 +100,9 @@ function Shell(): ReactNode {
           setConfirmIntent({ kind: "delete-all" });
         }}
       />
+      <CreateSiteModal />
+      <UnlockSiteModal />
+      <InstallPrompt />
       <ConfirmDialog
         open={confirmIntent !== null}
         tone={confirmIntent ? "danger" : "default"}
@@ -118,8 +131,14 @@ function Shell(): ReactNode {
         }
         confirmLabel="Șterge"
         onConfirm={() => {
-          if (confirmIntent?.kind === "delete-all") deleteAll();
-          else if (confirmIntent?.kind === "delete-site") deleteSite(confirmIntent.siteId);
+          if (confirmIntent?.kind === "delete-all") {
+            lockAllSessions();
+            deleteAll();
+          } else if (confirmIntent?.kind === "delete-site") {
+            lockSession(confirmIntent.siteId);
+            clearSite(confirmIntent.siteId);
+            deleteSite(confirmIntent.siteId);
+          }
           setConfirmIntent(null);
         }}
         onCancel={() => setConfirmIntent(null)}

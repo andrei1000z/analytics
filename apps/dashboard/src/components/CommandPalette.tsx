@@ -50,7 +50,8 @@ export function CommandPalette({
   const selectSite = useStore((s) => s.selectSite);
   const setSettingsOpen = useStore((s) => s.setSettingsOpen);
   const setConfirmIntent = useStore((s) => s.setConfirmIntent);
-  const createSite = useStore((s) => s.createSite);
+  const setCreateOpen = useStore((s) => s.setCreateOpen);
+  const setUnlockSiteId = useStore((s) => s.setUnlockSiteId);
   const { setting, setSetting } = useTheme();
 
   const [query, setQuery] = useState("");
@@ -75,12 +76,11 @@ export function CommandPalette({
       id: "cmd:new-site",
       section: "Comenzi",
       label: "Site nou",
-      hint: "Adaugă un nou site monitorizat",
-      keywords: "nou create site domain adăugare",
+      hint: "Generează passphrase + embed snippet",
+      keywords: "nou create site domain adăugare passphrase",
       icon: Plus,
       action: () => {
-        const n = Object.keys(sitesMap).length + 1;
-        createSite({ name: `Site #${n}`, domain: `site-${n}.eu` });
+        setCreateOpen(true);
         onClose();
       },
     });
@@ -145,9 +145,22 @@ export function CommandPalette({
           onClose();
         },
       });
+      next.push({
+        id: `unlock:${site.id}`,
+        section: "Site-uri",
+        label: `Deblochează ${site.name}`,
+        hint: "Introdu passphrase E2E",
+        keywords: `unlock ${site.name} ${site.domain} deblocare passphrase`,
+        icon: SettingsIcon,
+        action: () => {
+          selectSite(site.id);
+          setUnlockSiteId(site.id);
+          onClose();
+        },
+      });
     }
     return next;
-  }, [sitesMap, setting, setSetting, setSettingsOpen, setConfirmIntent, createSite, selectSite, onClose]);
+  }, [sitesMap, setting, setSetting, setSettingsOpen, setConfirmIntent, setCreateOpen, setUnlockSiteId, selectSite, onClose]);
 
   const fuse = useMemo(
     () =>

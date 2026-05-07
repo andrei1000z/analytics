@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { ShieldCheck } from "lucide-react";
-import type { SyncStatus } from "@/store/useStore";
+import type { SyncStatus } from "@/store/useSessions";
 import { cn } from "@/lib/cn";
 
 const LABELS: Record<SyncStatus, string> = {
