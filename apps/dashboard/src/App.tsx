@@ -6,6 +6,7 @@ import { useDesktop } from "@/hooks/useMediaQuery";
 import { useHotkeys } from "@/hooks/useHotkeys";
 import { useTheme } from "@/hooks/useTheme";
 import { useSync } from "@/hooks/useSync";
+import { useConfigSync } from "@/hooks/useConfigSync";
 import { Sidebar } from "@/components/Sidebar";
 import { MainPane } from "@/components/MainPane";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -33,6 +34,8 @@ export default function App(): ReactNode {
 function Shell(): ReactNode {
   // Per-site sync clients keyed off the in-memory session map.
   useSync();
+  // Phase 7: cross-device config sync (master passphrase → encrypted state on ingest).
+  useConfigSync();
 
   const activeSiteId = useStore((s) => s.activeSiteId);
   const sitesMap = useStore((s) => s.sites);

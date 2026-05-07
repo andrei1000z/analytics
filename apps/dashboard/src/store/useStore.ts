@@ -28,8 +28,12 @@ type StoreState = {
   collections: Record<string, Collection>;
   activeSiteId: string | null;
   range: Range;
-  /** Global ingest server URL. Operators usually point at a single VPS. */
+  /** Global ingest server URL (self-hosted) or Supabase Functions base. */
   ingestUrl: string;
+  /** Supabase project URL (https://<ref>.supabase.co). Empty = use self-hosted via ingestUrl. */
+  supabaseUrl: string;
+  /** Supabase anon (public) key. Safe to ship in the dashboard build. */
+  supabaseAnonKey: string;
   /** Where the embeddable tracker is served from. Defaults to ingestUrl when empty. */
   trackerUrl: string;
   paletteOpen: boolean;
@@ -53,6 +57,8 @@ type StoreActions = {
   toggleCollection: (collectionId: string) => void;
   setRange: (range: Range) => void;
   setIngestUrl: (url: string) => void;
+  setSupabaseUrl: (url: string) => void;
+  setSupabaseAnonKey: (key: string) => void;
   setTrackerUrl: (url: string) => void;
   setPaletteOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
@@ -72,6 +78,8 @@ export const useStore = create<StoreState & StoreActions>()(
       // Defaults baked at build time via Vercel env vars (or fallbacks).
       // Operators override per-browser via Settings → Endpoints.
       ingestUrl: import.meta.env.VITE_DEFAULT_INGEST_URL ?? "",
+      supabaseUrl: import.meta.env.VITE_DEFAULT_SUPABASE_URL ?? "",
+      supabaseAnonKey: import.meta.env.VITE_DEFAULT_SUPABASE_ANON_KEY ?? "",
       // Tracker JS lives on the dashboard's own origin by default.
       trackerUrl:
         import.meta.env.VITE_DEFAULT_TRACKER_URL ??
@@ -142,6 +150,8 @@ export const useStore = create<StoreState & StoreActions>()(
 
       setRange: (range) => set({ range }),
       setIngestUrl: (ingestUrl) => set({ ingestUrl }),
+      setSupabaseUrl: (supabaseUrl) => set({ supabaseUrl }),
+      setSupabaseAnonKey: (supabaseAnonKey) => set({ supabaseAnonKey }),
       setTrackerUrl: (trackerUrl) => set({ trackerUrl }),
       setPaletteOpen: (paletteOpen) => set({ paletteOpen }),
       setSettingsOpen: (settingsOpen) => set({ settingsOpen }),

@@ -11,9 +11,12 @@ import { useStore } from "@/store/useStore";
 import { useSessions } from "@/store/useSessions";
 import { SyncClient } from "@/sync/client";
 import type { SyncEvent } from "@/sync/client";
+import { SupabaseSyncClient } from "@/sync/supabaseSync";
+
+type AnyClient = { start: () => void; stop: () => void };
 
 type Managed = {
-  client: SyncClient;
+  client: AnyClient;
   passphrase: string;
 };
 
@@ -38,14 +41,16 @@ function normalize(p: unknown, fallbackTs: number): DecryptedEvent | null {
 
 export function useSync(): void {
   const ingestUrl = useStore((s) => s.ingestUrl);
+  const supabaseUrl = useStore((s) => s.supabaseUrl);
+  const supabaseAnonKey = useStore((s) => s.supabaseAnonKey);
   const sessions = useSessions((s) => s.sessions);
-  const attachClient = useSessions((s) => s.attachClient);
   const setStatus = useSessions((s) => s.setStatus);
 
   const managed = useRef<Map<string, Managed>>(new Map());
 
   useEffect(() => {
     const live = managed.current;
+    const useSupabase = supabaseUrl.trim().length > 0 && supabaseAnonKey.trim().length > 0;
 
     // Tear down clients whose session is gone or whose passphrase changed.
     for (const [siteId, m] of live) {
@@ -59,7 +64,7 @@ export function useSync(): void {
     // Spawn clients for new sessions.
     for (const [siteId, sess] of Object.entries(sessions)) {
       if (live.has(siteId)) continue;
-      if (!ingestUrl.trim()) {
+      if (!useSupabase && !ingestUrl.trim()) {
         setStatus(siteId, "error");
         continue;
       }
@@ -91,19 +96,27 @@ export function useSync(): void {
         }
       };
 
-      const client = new SyncClient({
-        url: ingestUrl,
-        roomId: sess.roomId,
-        siteKey: sess.siteKey,
-        onEvent,
-        onStatus: (status) => setStatus(siteId, status),
-      });
+      const client: AnyClient = useSupabase
+        ? new SupabaseSyncClient({
+            supabaseUrl,
+            supabaseAnonKey,
+            roomId: sess.roomId,
+            siteKey: sess.siteKey,
+            onEvent,
+            onStatus: (status) => setStatus(siteId, status),
+          })
+        : new SyncClient({
+            url: ingestUrl,
+            roomId: sess.roomId,
+            siteKey: sess.siteKey,
+            onEvent,
+            onStatus: (status) => setStatus(siteId, status),
+          });
 
       live.set(siteId, { client, passphrase: sess.passphrase });
-      attachClient(siteId, client);
       client.start();
     }
-  }, [sessions, ingestUrl, attachClient, setStatus]);
+  }, [sessions, ingestUrl, supabaseUrl, supabaseAnonKey, setStatus]);
 
   useEffect(() => {
     const live = managed.current;

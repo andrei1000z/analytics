@@ -29,8 +29,16 @@ export type Session = {
   client: SyncClient | null;
 };
 
+export type ConfigSyncStatus = "idle" | "connecting" | "connected" | "offline" | "error";
+
 type SessionsState = {
   sessions: Record<string, Session>;
+  /** Master passphrase for cross-device config sync. In-memory only. */
+  masterPassphrase: string | null;
+  configSyncStatus: ConfigSyncStatus;
+  configSyncDetail: string | null;
+  /** Wall-clock of last accepted snapshot from another device (ms). */
+  lastSnapshotAt: number | null;
 };
 
 type SessionsActions = {
@@ -42,10 +50,17 @@ type SessionsActions = {
   setStatus: (siteId: string, status: SyncStatus) => void;
   lock: (siteId: string) => void;
   lockAll: () => void;
+  setMasterPassphrase: (passphrase: string | null) => void;
+  setConfigSyncStatus: (status: ConfigSyncStatus, detail?: string | null) => void;
+  recordSnapshotApplied: () => void;
 };
 
 export const useSessions = create<SessionsState & SessionsActions>((set, get) => ({
   sessions: {},
+  masterPassphrase: null,
+  configSyncStatus: "idle",
+  configSyncDetail: null,
+  lastSnapshotAt: null,
 
   unlock: (siteId, partial) =>
     set((state) => {
@@ -100,8 +115,20 @@ export const useSessions = create<SessionsState & SessionsActions>((set, get) =>
   lockAll: () => {
     const all = get().sessions;
     for (const s of Object.values(all)) s.client?.stop();
-    set({ sessions: {} });
+    set({ sessions: {}, masterPassphrase: null, configSyncStatus: "idle" });
   },
+
+  setMasterPassphrase: (masterPassphrase) =>
+    set({
+      masterPassphrase,
+      configSyncStatus: masterPassphrase ? "connecting" : "idle",
+      configSyncDetail: null,
+    }),
+
+  setConfigSyncStatus: (configSyncStatus, configSyncDetail = null) =>
+    set({ configSyncStatus, configSyncDetail }),
+
+  recordSnapshotApplied: () => set({ lastSnapshotAt: Date.now() }),
 }));
 
 export function useSessionStatus(siteId: string | null): SyncStatus {

@@ -5,13 +5,19 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   Code2,
   Database,
+  Eye,
+  EyeOff,
   Keyboard,
   Link2,
+  Lock,
   Monitor,
   Moon,
+  RefreshCcw,
   ShieldCheck,
+  Smartphone,
   Sun,
   Trash2,
+  Unplug,
   X,
   Zap,
 } from "lucide-react";
@@ -19,6 +25,10 @@ import type { LucideIcon } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import type { ThemeSetting } from "@/hooks/useTheme";
 import { useStore } from "@/store/useStore";
+import { useSessions } from "@/store/useSessions";
+import { generatePassphrase } from "@/sync/passphrase";
+import { relativeTime } from "@/lib/format";
+import { InstallButton } from "./InstallButton";
 import { ScannerRing } from "./ScannerRing";
 import type { ScannerState } from "./ScannerRing";
 import { Kbd } from "./Kbd";
@@ -102,6 +112,10 @@ export function SettingsModal({
             <div className="max-h-[70vh] overflow-y-auto px-7 py-6">
               <EndpointsSection />
               <Divider />
+              <DeviceSyncSection />
+              <Divider />
+              <InstallSection />
+              <Divider />
               <ThemeSection />
               <Divider />
               <OptimizeSection />
@@ -121,6 +135,157 @@ export function SettingsModal({
 
 function Divider(): ReactNode {
   return <div className="my-6 h-px bg-line" aria-hidden />;
+}
+
+function DeviceSyncSection(): ReactNode {
+  const masterPassphrase = useSessions((s) => s.masterPassphrase);
+  const setMasterPassphrase = useSessions((s) => s.setMasterPassphrase);
+  const status = useSessions((s) => s.configSyncStatus);
+  const detail = useSessions((s) => s.configSyncDetail);
+  const lastSnapshotAt = useSessions((s) => s.lastSnapshotAt);
+
+  const [draft, setDraft] = useState(masterPassphrase ?? "");
+  const [show, setShow] = useState(false);
+
+  useEffect(() => setDraft(masterPassphrase ?? ""), [masterPassphrase]);
+
+  const STATUS_LABEL: Record<typeof status, string> = {
+    idle: "Inactiv",
+    connecting: "Conectare…",
+    connected: "Sincronizat",
+    offline: "Offline",
+    error: "Eroare",
+  };
+  const STATUS_DOT: Record<typeof status, string> = {
+    idle: "bg-text-faint",
+    connecting: "bg-eu-blue animate-pulse",
+    connected: "bg-emerald-500",
+    offline: "bg-amber-500",
+    error: "bg-red-500",
+  };
+
+  return (
+    <section>
+      <p className={SECTION_TITLE_CLASS}>
+        <span className="inline-flex items-center gap-2">
+          <Smartphone className="h-3 w-3" aria-hidden />
+          Sincronizare între dispozitive
+        </span>
+      </p>
+      <div className="mt-3 rounded-2xl border border-line bg-soft-gray/50 p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1">
+            <h3 className="text-sm font-semibold tracking-tight">Master passphrase</h3>
+            <p className="mt-1 text-xs leading-relaxed text-text-muted">
+              Introdu aceeași frază pe laptop și telefon → toate site-urile + passphrase-urile per
+              site se sincronizează automat prin Pi-ul tău, criptate. <strong>Doar tu</strong> cu
+              fraza asta poți decripta — serverul vede ciphertext.
+            </p>
+          </div>
+          <span
+            className="inline-flex items-center gap-2 rounded-full border border-line bg-soft-elev/70 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.14em] text-text-muted backdrop-blur-md"
+            role="status"
+          >
+            <span className={cn("inline-flex h-1.5 w-1.5 rounded-full", STATUS_DOT[status])} />
+            {STATUS_LABEL[status]}
+          </span>
+        </div>
+
+        <div className="mt-4 space-y-2">
+          <div className="flex gap-2">
+            <input
+              type={show ? "text" : "password"}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="6+ cuvinte sau o frază lungă…"
+              spellCheck={false}
+              autoCapitalize="none"
+              autoCorrect="off"
+              className="flex-1 rounded-xl border border-line bg-soft-elev px-3 py-2 font-mono text-sm text-text-main placeholder:text-text-faint shadow-soft-1 transition-colors focus:border-eu-blue/40 focus:outline-none focus:ring-2 focus:ring-eu-blue/15"
+            />
+            <button
+              type="button"
+              onClick={() => setShow((s) => !s)}
+              className="rounded-xl border border-line bg-soft-elev px-3 text-text-muted transition-colors hover:text-text-main"
+              aria-label={show ? "Ascunde" : "Arată"}
+            >
+              {show ? (
+                <EyeOff className="h-4 w-4" aria-hidden />
+              ) : (
+                <Eye className="h-4 w-4" aria-hidden />
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setDraft(generatePassphrase())}
+              className="rounded-xl border border-line bg-soft-elev px-3 text-text-muted transition-colors hover:text-text-main"
+              aria-label="Generează frază nouă"
+              title="Generează frază nouă"
+            >
+              <RefreshCcw className="h-4 w-4" aria-hidden />
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setMasterPassphrase(draft.length >= 8 ? draft : null)}
+            disabled={draft.length < 8}
+            className="inline-flex items-center gap-2 rounded-2xl bg-eu-blue px-4 py-2 text-sm font-medium text-white shadow-soft-1 transition-all hover:-translate-y-px hover:bg-eu-blue-light disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+          >
+            <Lock className="h-4 w-4" aria-hidden />
+            {masterPassphrase ? "Reactivează sync" : "Pornește sync"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMasterPassphrase(null)}
+            disabled={!masterPassphrase}
+            className="inline-flex items-center gap-2 rounded-2xl border border-line bg-soft-elev px-4 py-2 text-sm font-medium text-text-main shadow-soft-1 transition-all hover:-translate-y-px hover:shadow-soft-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
+          >
+            <Unplug className="h-4 w-4" aria-hidden />
+            Oprește
+          </button>
+          {lastSnapshotAt ? (
+            <span className="text-[11px] text-text-faint">
+              · Ultimul snapshot {relativeTime(lastSnapshotAt)}
+            </span>
+          ) : null}
+        </div>
+
+        {detail ? (
+          <p className="mt-2 text-[11px] text-text-faint">Status: {detail}</p>
+        ) : null}
+
+        <p className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.05] px-3 py-2 text-[11px] leading-relaxed text-amber-700 dark:text-amber-300">
+          ⚠ Master passphrase e cheia care deblochează <strong>toate</strong> celelalte. Dacă o pierzi
+          → reintroduci passphrase-uri pe rând. Dacă o spune cineva → are acces la lista ta de
+          site-uri și passphrase-urile lor (nu și la datele de pe alte servere). Salvează în 1Password
+          sau hârtie închisă.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function InstallSection(): ReactNode {
+  return (
+    <section>
+      <p className={SECTION_TITLE_CLASS}>
+        <span className="inline-flex items-center gap-2">
+          <Smartphone className="h-3 w-3" aria-hidden />
+          Instalează ca aplicație
+        </span>
+      </p>
+      <div className="mt-3 rounded-2xl border border-line bg-soft-gray/50 p-5">
+        <p className="mb-3 text-xs leading-relaxed text-text-muted">
+          Dashboard-ul rulează ca aplicație nativă (PWA) — fullscreen, fără bara browser-ului,
+          iconiță pe home screen. Funcționează offline pentru paginile cache-uite.
+        </p>
+        <InstallButton />
+      </div>
+    </section>
+  );
 }
 
 function EndpointsSection(): ReactNode {
