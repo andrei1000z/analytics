@@ -45,6 +45,17 @@ function parseHexNibble(c: number): number {
   return -1;
 }
 
+/**
+ * PostgREST expects bytea as a `\xHEX` string. Passing a raw Uint8Array makes
+ * supabase-js JSON.stringify it into `{"0":170,…}` which is then stored as the
+ * literal text representation of that object — not the bytes we wanted.
+ */
+function toBytea(bytes: Uint8Array): string {
+  let hex = "\\x";
+  for (const b of bytes) hex += b.toString(16).padStart(2, "0");
+  return hex;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: cors });
@@ -77,10 +88,10 @@ Deno.serve(async (req) => {
   });
 
   const { error } = await supabase.from("events").insert({
-    site_id: siteId,
+    site_id: toBytea(siteId),
     time_bucket: bucket,
     received_at: now,
-    ciphertext: body,
+    ciphertext: toBytea(body),
   });
 
   if (error) {
