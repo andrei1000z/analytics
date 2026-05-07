@@ -69,8 +69,13 @@ export const useStore = create<StoreState & StoreActions>()(
       collections: {},
       activeSiteId: null,
       range: "7d",
-      ingestUrl: "",
-      trackerUrl: "",
+      // Defaults baked at build time via Vercel env vars (or fallbacks).
+      // Operators override per-browser via Settings → Endpoints.
+      ingestUrl: import.meta.env.VITE_DEFAULT_INGEST_URL ?? "",
+      // Tracker JS lives on the dashboard's own origin by default.
+      trackerUrl:
+        import.meta.env.VITE_DEFAULT_TRACKER_URL ??
+        (typeof window !== "undefined" ? window.location.origin : ""),
       paletteOpen: false,
       settingsOpen: false,
       createOpen: false,
@@ -165,6 +170,10 @@ export const useStore = create<StoreState & StoreActions>()(
       }),
       migrate: (persisted, version) => {
         const partial = persisted as Partial<StoreState> | null | undefined;
+        const defaultIngest = import.meta.env.VITE_DEFAULT_INGEST_URL ?? "";
+        const defaultTracker =
+          import.meta.env.VITE_DEFAULT_TRACKER_URL ??
+          (typeof window !== "undefined" ? window.location.origin : "");
         // v1 → v2: sites schema added `roomId` (no longer derivable from old seeds).
         // Drop legacy seeds; user re-creates real sites with passphrases.
         if (version < 2) {
@@ -173,8 +182,8 @@ export const useStore = create<StoreState & StoreActions>()(
             collections: partial?.collections ?? {},
             activeSiteId: null,
             range: partial?.range ?? "7d",
-            ingestUrl: partial?.ingestUrl ?? "",
-            trackerUrl: partial?.trackerUrl ?? "",
+            ingestUrl: defaultIngest,
+            trackerUrl: defaultTracker,
           } as Partial<StoreState> as never;
         }
         return {
@@ -182,8 +191,8 @@ export const useStore = create<StoreState & StoreActions>()(
           collections: partial?.collections ?? {},
           activeSiteId: partial?.activeSiteId ?? null,
           range: partial?.range ?? "7d",
-          ingestUrl: partial?.ingestUrl ?? "",
-          trackerUrl: partial?.trackerUrl ?? "",
+          ingestUrl: partial?.ingestUrl || defaultIngest,
+          trackerUrl: partial?.trackerUrl || defaultTracker,
         } as Partial<StoreState> as never;
       },
     },
