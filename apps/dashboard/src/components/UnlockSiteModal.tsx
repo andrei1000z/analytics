@@ -81,6 +81,7 @@ export function UnlockSiteModal(): ReactNode {
             className="glass-overlay fixed inset-0 z-[60]"
             onClick={() => setUnlockSiteId(null)}
           />
+          <div className="pointer-events-none fixed inset-0 z-[65] flex items-center justify-center p-4">
           <motion.div
             key="modal"
             initial={{ opacity: 0, y: 16, scale: 0.96 }}
@@ -90,7 +91,7 @@ export function UnlockSiteModal(): ReactNode {
             role="dialog"
             aria-modal="true"
             aria-labelledby="unlock-title"
-            className="glass-modal fixed left-1/2 top-1/2 z-[65] w-[min(28rem,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-3xl p-7"
+            className="glass-modal pointer-events-auto w-[min(28rem,92vw)] rounded-3xl p-7"
           >
             <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 flex-none items-center justify-center rounded-2xl bg-eu-blue/10 text-eu-blue dark:bg-eu-blue-light/15 dark:text-eu-blue-light">
@@ -181,6 +182,7 @@ export function UnlockSiteModal(): ReactNode {
               </button>
             </div>
           </motion.div>
+          </div>
         </>
       ) : null}
     </AnimatePresence>,

@@ -69,6 +69,7 @@ export function SettingsModal({
             className="glass-overlay fixed inset-0 z-50"
             onClick={onClose}
           />
+          <div className="pointer-events-none fixed inset-0 z-[55] flex items-center justify-center p-4">
           <motion.div
             key="modal"
             initial={{ opacity: 0, y: 16, scale: 0.96 }}
@@ -78,7 +79,7 @@ export function SettingsModal({
             role="dialog"
             aria-modal="true"
             aria-labelledby="settings-title"
-            className="glass-modal fixed left-1/2 top-1/2 z-[55] w-[min(34rem,92vw)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl"
+            className="glass-modal pointer-events-auto w-[min(34rem,92vw)] overflow-hidden rounded-3xl"
           >
             <div className="flex items-start justify-between border-b border-white/20 px-7 pt-6 pb-5 dark:border-white/10">
               <div>
@@ -110,6 +111,7 @@ export function SettingsModal({
               <ShortcutsSection />
             </div>
           </motion.div>
+          </div>
         </>
       ) : null}
     </AnimatePresence>,

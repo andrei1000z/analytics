@@ -61,6 +61,7 @@ export function ConfirmDialog({
             className="glass-overlay fixed inset-0 z-[60]"
             onClick={onCancel}
           />
+          <div className="pointer-events-none fixed inset-0 z-[70] flex items-center justify-center p-4">
           <motion.div
             key="dialog"
             initial={{ opacity: 0, y: 16, scale: 0.96 }}
@@ -70,7 +71,7 @@ export function ConfirmDialog({
             role="dialog"
             aria-modal="true"
             aria-labelledby="confirm-title"
-            className="glass-modal fixed left-1/2 top-1/2 z-[70] w-[min(26rem,90vw)] -translate-x-1/2 -translate-y-1/2 rounded-3xl p-7"
+            className="glass-modal pointer-events-auto w-[min(26rem,90vw)] rounded-3xl p-7"
           >
             <div className="flex items-start gap-3">
               <div
@@ -116,6 +117,7 @@ export function ConfirmDialog({
               </button>
             </div>
           </motion.div>
+          </div>
         </>
       ) : null}
     </AnimatePresence>,

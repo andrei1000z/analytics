@@ -124,6 +124,7 @@ export function CreateSiteModal(): ReactNode {
             className="glass-overlay fixed inset-0 z-[60]"
             onClick={() => setOpen(false)}
           />
+          <div className="pointer-events-none fixed inset-0 z-[65] flex items-center justify-center p-4">
           <motion.div
             key="modal"
             initial={{ opacity: 0, y: 16, scale: 0.96 }}
@@ -133,7 +134,7 @@ export function CreateSiteModal(): ReactNode {
             role="dialog"
             aria-modal="true"
             aria-labelledby="create-site-title"
-            className="glass-modal fixed left-1/2 top-1/2 z-[65] w-[min(36rem,94vw)] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl"
+            className="glass-modal pointer-events-auto w-[min(36rem,94vw)] overflow-hidden rounded-3xl"
           >
             <div className="flex items-start justify-between gap-3 border-b border-white/20 px-7 pt-6 pb-5 dark:border-white/10">
               <div>
@@ -319,6 +320,7 @@ export function CreateSiteModal(): ReactNode {
               )}
             </div>
           </motion.div>
+          </div>
         </>
       ) : null}
     </AnimatePresence>,

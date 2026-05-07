@@ -68,12 +68,13 @@ export function InstallPrompt(): ReactNode {
   return (
     <AnimatePresence>
       {visible ? (
+        <div className="pointer-events-none fixed inset-x-0 bottom-4 z-[55] flex justify-center p-4">
         <motion.div
           initial={{ opacity: 0, y: 24, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 12, scale: 0.97 }}
           transition={{ type: "spring", stiffness: 380, damping: 28, mass: 0.7 }}
-          className="glass-modal fixed bottom-4 left-1/2 z-[55] w-[min(22rem,92vw)] -translate-x-1/2 rounded-3xl p-4 shadow-glass dark:shadow-glass-dark"
+          className="glass-modal pointer-events-auto w-[min(22rem,92vw)] rounded-3xl p-4 shadow-glass dark:shadow-glass-dark"
           role="dialog"
           aria-label="Instalează Analytics"
         >
@@ -125,6 +126,7 @@ export function InstallPrompt(): ReactNode {
             </div>
           ) : null}
         </motion.div>
+        </div>
       ) : null}
     </AnimatePresence>
   );

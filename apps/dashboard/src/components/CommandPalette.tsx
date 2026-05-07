@@ -244,6 +244,7 @@ export function CommandPalette({
             className="glass-overlay fixed inset-0 z-50"
             onClick={onClose}
           />
+          <div className="pointer-events-none fixed inset-0 z-[55] flex items-start justify-center p-4 pt-[14vh]">
           <motion.div
             key="palette"
             initial={{ opacity: 0, y: 8, scale: 0.97 }}
@@ -253,7 +254,7 @@ export function CommandPalette({
             role="dialog"
             aria-modal="true"
             aria-label="Paletă de comenzi"
-            className="glass-modal fixed left-1/2 top-[14vh] z-[55] flex w-[min(36rem,92vw)] -translate-x-1/2 flex-col overflow-hidden rounded-3xl"
+            className="glass-modal pointer-events-auto flex w-[min(36rem,92vw)] flex-col overflow-hidden rounded-3xl"
           >
             <div className="flex items-center gap-3 border-b border-white/20 px-5 py-3.5 dark:border-white/10">
               <Search className="h-4 w-4 text-text-faint" aria-hidden />
@@ -341,6 +342,7 @@ export function CommandPalette({
               </span>
             </div>
           </motion.div>
+          </div>
         </>
       ) : null}
     </AnimatePresence>,
