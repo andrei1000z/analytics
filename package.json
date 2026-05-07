@@ -11,6 +11,8 @@
   "scripts": {
     "dev": "pnpm --filter @analytics/dashboard dev",
     "build": "pnpm --filter @analytics/dashboard build",
+    "build:tracker": "pnpm --filter @analytics/tracker build",
+    "build:all": "pnpm -r --if-present run build",
     "preview": "pnpm --filter @analytics/dashboard preview",
     "typecheck": "pnpm -r --if-present run typecheck",
     "gen:icon": "pnpm --filter @analytics/dashboard gen:icon"

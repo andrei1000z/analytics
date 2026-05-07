@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analytics Tracker — Demo</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        max-width: 40rem;
+        margin: 4rem auto;
+        padding: 0 1.5rem;
+        line-height: 1.6;
+      }
+      code, pre {
+        background: #f3f4f6;
+        padding: 0.125rem 0.375rem;
+        border-radius: 0.25rem;
+        font-family: ui-monospace, monospace;
+      }
+      pre { padding: 1rem; overflow: auto; }
+      .nav { margin: 2rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+      .nav button {
+        font-family: inherit;
+        font-size: 0.875rem;
+        padding: 0.5rem 0.875rem;
+        border-radius: 0.5rem;
+        border: 1px solid #d1d5db;
+        background: white;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Analytics Tracker — Demo</h1>
+    <p>
+      Ăsta e un demo local pentru tracker. Snippet-ul încarcă tracker-ul de la
+      <code>../dist/tracker.js</code>, ratează request-ul de ingest (nu rulează un server local),
+      dar îl poți inspecta în <strong>Network</strong> tab → <code>/e</code> request cu body
+      <code>application/octet-stream</code> (12B IV + ciphertext).
+    </p>
+
+    <h2>Verificare manuală</h2>
+    <ol>
+      <li><code>pnpm --filter @analytics/tracker build</code></li>
+      <li>Servește acest folder cu <code>npx serve packages/tracker/demo</code></li>
+      <li>Deschide DevTools → Network → Filter „/e"</li>
+      <li>Click pe butoane mai jos. Fiecare emite un beacon criptat AES-GCM.</li>
+    </ol>
+
+    <h2>Snippet</h2>
+    <pre>&lt;script
+  src="https://cdn.example.eu/t.js<wbr />#&lt;base64url-key&gt;"
+  data-site="&lt;site-id-pbkdf2-hash&gt;"
+  defer
+&gt;&lt;/script&gt;</pre>
+
+    <h2>Navigare SPA simulată</h2>
+    <div class="nav">
+      <button onclick="history.pushState({}, '', '/blog')">/blog</button>
+      <button onclick="history.pushState({}, '', '/pricing')">/pricing</button>
+      <button onclick="history.pushState({}, '', '/docs')">/docs</button>
+      <button onclick="history.back()">back</button>
+    </div>
+
+    <p>
+      Cheia AES de mai jos e doar pentru demo — în producție generezi una pe site la
+      onboarding, derivă din passphrase via PBKDF2-HMAC-SHA-256 200k.
+    </p>
+
+    <!-- Demo key: 32 zero bytes encoded as base64url. NEVER reuse in production. -->
+    <script
+      src="../dist/tracker.js#AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+      data-site="demo-site-fixture"
+      defer
+    ></script>
+  </body>
+</html>
