@@ -1,7 +1,7 @@
 # Multi-stage build: compile in slim Rust image, ship in distroless ~80 MB.
 # Caches the dependency layer separately so most rebuilds are fast.
 
-FROM rust:1.83-bookworm AS builder
+FROM rust:1-bookworm AS builder
 WORKDIR /app
 
 # Pre-fetch deps via a stub main.rs so the cargo registry layer caches.
