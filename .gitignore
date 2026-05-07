@@ -54,3 +54,6 @@ apps/dashboard/public/apple-touch-icon.png
 
 # Vsix artifacts (Claude Code installer)
 *.vsix
+
+# Supabase CLI cache
+**/supabase/.temp/
