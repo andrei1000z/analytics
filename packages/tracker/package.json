@@ -1,0 +1,14 @@
+{
+  "name": "@analytics/tracker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Vanilla TS tracker, ≤1 KB minified+gzipped, no deps. Phase 3.",
+  "scripts": {
+    "build": "echo \"Phase 3: implement esbuild pipeline + gzip-size assertion\" && exit 0",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.0"
+  }
+}

@@ -1,0 +1,17 @@
+[package]
+name = "analytics-ingest"
+version = "0.1.0"
+edition = "2021"
+description = "EU-sovereign zero-knowledge web analytics ingest server. Phase 4."
+license = "AGPL-3.0-only"
+publish = false
+
+[dependencies]
+# Phase 4 brings in: axum, sqlx, tokio, tracing, serde, blake3, hmac.
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

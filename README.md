@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Analytics
 
-## Getting Started
+> Privacy-first, EU-sovereign, zero-knowledge web analytics.
+> Liquid Glass 2026 · React 19 · Vite 7 · Tauri 2 · Rust ingest.
 
-First, run the development server:
+The server stores ciphertext only and is **mathematically incapable** of reading your traffic.
+No cookies. No fingerprinting. No US CLOUD Act exposure. Open-source, self-hostable.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Status — Phase 0: Bootstrap
+
+Monorepo skeleton + design tokens + bootstrap preview screen.
+
+```
+analytics/
+├── apps/
+│   └── dashboard/        Vite + React + TS + Tailwind 3.4 + framer-motion
+├── packages/
+│   └── tracker/          ≤1 KB embeddable JS (Phase 3)
+├── services/
+│   └── ingest/           Rust + axum (Phase 4)
+└── docs/
+    └── ARCHITECTURE.md   Threat model + data flow + privacy invariants
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Quickstart
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Requires Node 20+ and pnpm 9+.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+pnpm install
+pnpm dev          # apps/dashboard at http://localhost:5173
+pnpm build        # production build
+pnpm typecheck    # tsc --noEmit across all workspaces
+```
 
-## Learn More
+## Deployment
 
-To learn more about Next.js, take a look at the following resources:
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for EU-sovereign hosting paths
+(Hetzner DE / Scaleway FR / OVH FR / Raspberry Pi + Cloudflare Tunnel).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Architecture
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+See [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for the threat model,
+data flow, and zero-knowledge identity / encryption protocol.
 
-## Deploy on Vercel
+## License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+AGPL-3.0-only. The server source code is yours to inspect, audit, and self-host.

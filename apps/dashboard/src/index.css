@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * CSS-var tokens — channel-triplet pattern.
+ * Tailwind 3.4 reads `rgb(var(--x) / <alpha-value>)`, so both `bg-line` and
+ * `bg-line/70` work. NEVER define a token as a wrapped `rgb(229, 231, 235)`
+ * string — opacity modifiers will silently fail.
+ */
+:root {
+  --soft-bg: 255 255 255;
+  --soft-gray: 248 249 250;
+  --soft-elev: 255 255 255;
+  --text-main: 26 26 26;
+  --text-muted: 107 114 128;
+  --text-faint: 156 163 175;
+  --line: 229 231 235;
+  --line-strong: 209 213 219;
+  --selection-bg: rgba(0, 51, 153, 0.15);
+  --selection-fg: #1a1a1a;
+  color-scheme: light;
+}
+
+.dark {
+  --soft-bg: 10 10 12;
+  --soft-gray: 19 19 22;
+  --soft-elev: 26 26 29;
+  --text-main: 236 236 236;
+  --text-muted: 156 163 175;
+  --text-faint: 107 114 128;
+  --line: 38 38 42;
+  --line-strong: 58 58 64;
+  --selection-bg: rgba(102, 153, 255, 0.25);
+  --selection-fg: #ececec;
+  color-scheme: dark;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-soft-bg text-text-main;
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    transition:
+      background-color 220ms ease,
+      color 220ms ease;
+  }
+
+  ::selection {
+    background-color: var(--selection-bg);
+    color: var(--selection-fg);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--line-strong));
+    border-radius: 8px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--text-faint));
+    background-clip: padding-box;
+    border: 2px solid transparent;
+  }
+
+  /* Respect reduced-motion preference for users who request it */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Floating overlays — modals, command palette, link popups */
+  .glass-modal {
+    @apply border border-white/20 bg-white/65 backdrop-blur-3xl shadow-glass;
+  }
+  .dark .glass-modal {
+    @apply border-white/10 bg-black/65 shadow-glass-dark;
+  }
+
+  /* Persistent surfaces — sidebar, side panels, KPI cards */
+  .glass-card {
+    @apply border border-line bg-soft-elev/80 backdrop-blur-xl shadow-glass;
+  }
+  .dark .glass-card {
+    @apply shadow-glass-dark;
+  }
+
+  /* Backdrop behind modals */
+  .glass-overlay {
+    @apply bg-black/20 backdrop-blur-md;
+  }
+  .dark .glass-overlay {
+    @apply bg-black/55;
+  }
+}
